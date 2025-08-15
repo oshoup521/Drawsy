@@ -351,19 +351,19 @@ const GameRoom: React.FC = () => {
         </motion.div>
 
         {/* Lobby Content */}
-        <div className="flex flex-1 gap-6 p-6 max-w-6xl mx-auto">
+        <div className="flex flex-1 gap-6 p-6 max-w-6xl mx-auto h-[calc(100vh-100px)]">
           {/* Players Panel - Left Side */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="w-80 space-y-4"
+            className="w-80 space-y-4 flex flex-col h-full"
           >
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 flex-1 flex flex-col">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 👥 Players ({gameState.players.length}/{gameState.playerCount})
               </h2>
               
-              <div className="space-y-3">
+              <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
                 {gameState.players.map((player) => (
                   <div
                     key={player.userId}
@@ -386,17 +386,17 @@ const GameRoom: React.FC = () => {
                     </div>
                   </div>
                 ))}
-              </div>
 
-              {gameState.players.length < gameState.playerCount && (
-                <div className="mt-4 p-3 border-2 border-dashed border-white/30 rounded-lg text-center text-white/60">
-                  Waiting for more players...
-                </div>
-              )}
+                {gameState.players.length < gameState.playerCount && (
+                  <div className="mt-4 p-3 border-2 border-dashed border-white/30 rounded-lg text-center text-white/60">
+                    Waiting for more players...
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Game Settings */}
-            <div className="glass-card p-6">
+            <div className="glass-card p-6 flex-shrink-0">
               <h3 className="text-lg font-bold text-white mb-3">🎮 Game Settings</h3>
               <div className="space-y-2 text-white/80">
                 <div className="flex justify-between">
@@ -421,11 +421,13 @@ const GameRoom: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="flex-1"
           >
-            <div className="glass-card p-6 h-full">
+            <div className="glass-card p-6 h-full flex flex-col">
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 💬 Lobby Chat
               </h2>
-              <ChatPanel />
+              <div className="flex-1 min-h-0">
+                <ChatPanel />
+              </div>
             </div>
           </motion.div>
         </div>

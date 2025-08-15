@@ -111,16 +111,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
   return (
     <div className={`chat-panel ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white font-semibold flex items-center gap-2">
-          💬 Chat
-        </h3>
-        <span className="text-white/60 text-sm">
-          {chatMessages.length} messages
-        </span>
-      </div>
-
       {/* Messages */}
       <div className="chat-messages">
         <AnimatePresence>
@@ -246,19 +236,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                 <span className="text-xs text-purple-300 font-semibold">🤖 AI Suggestions:</span>
                 <span className="text-xs text-white/50">(Click to use)</span>
               </div>
-              <div className="space-y-2">
-                {aiSuggestions.map((suggestion, index) => (
-                  <motion.button
-                    key={index}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left p-2 bg-white/10 hover:bg-white/20 rounded text-white/90 text-sm transition-colors border border-white/10 hover:border-purple-400/50"
-                  >
-                    💬 {suggestion}
-                  </motion.button>
-                ))}
+              <div className="ai-suggestions-container">
+                <div className="space-y-2">
+                  {aiSuggestions.map((suggestion, index) => (
+                    <motion.button
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full text-left p-2 bg-white/10 hover:bg-white/20 rounded text-white/90 text-sm transition-colors border border-white/10 hover:border-purple-400/50"
+                    >
+                      💬 {suggestion}
+                    </motion.button>
+                  ))}
+                </div>
               </div>
             </motion.div>
           )}
