@@ -38,9 +38,9 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
   };
 
   return (
-    <div className={`players-panel ${className}`}>
+    <div className={`h-full flex flex-col ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h3 className="text-white font-semibold flex items-center gap-2">
           👥 Players ({gameState.players.length}/{gameState.playerCount})
         </h3>
@@ -72,7 +72,7 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
       )}
 
       {/* Players List */}
-      <div className="players-list flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 mb-4">
         <AnimatePresence>
           {sortedPlayers.map((player, index) => (
             <motion.div
@@ -133,37 +133,39 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
         </AnimatePresence>
       </div>
 
-      {/* Leaderboard Preview */}
-      {sortedPlayers.length > 0 && (
+      {/* Footer section */}
+      <div className="flex-shrink-0 space-y-4">
+        {/* Leaderboard Preview */}
+        {sortedPlayers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+          >
+            <div className="text-white/60 text-xs text-center mb-2">
+              🏆 Current Leader
+            </div>
+            <div className="text-center p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-400/30">
+              <div className="text-yellow-400 font-bold">
+                {sortedPlayers[0].userId === currentUser?.userId ? 'You' : sortedPlayers[0].name}
+              </div>
+              <div className="text-white/80 text-sm">
+                {sortedPlayers[0].score} points
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Tips */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="mt-4"
+          transition={{ delay: 0.8 }}
+          className="text-white/50 text-xs text-center"
         >
-          <div className="text-white/60 text-xs text-center mb-2">
-            🏆 Current Leader
-          </div>
-          <div className="text-center p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-400/30">
-            <div className="text-yellow-400 font-bold">
-              {sortedPlayers[0].userId === currentUser?.userId ? 'You' : sortedPlayers[0].name}
-            </div>
-            <div className="text-white/80 text-sm">
-              {sortedPlayers[0].score} points
-            </div>
-          </div>
+          💡 Tip: Guess correctly to earn points!
         </motion.div>
-      )}
-
-      {/* Tips */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.8 }}
-        className="mt-4 text-white/50 text-xs text-center"
-      >
-        💡 Tip: Guess correctly to earn points!
-      </motion.div>
+      </div>
     </div>
   );
 };

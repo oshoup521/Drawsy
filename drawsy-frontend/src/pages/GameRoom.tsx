@@ -505,29 +505,35 @@ const GameRoom: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-64 flex flex-col"
+          className="w-64 h-full"
         >
-          <PlayersPanel />
+          <div className="glass-card p-6 h-full flex flex-col">
+            <PlayersPanel className="flex-1" />
+          </div>
         </motion.div>
 
         {/* Center - Drawing Canvas */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex-1"
+          className="flex-1 h-full"
         >
-          <DrawingCanvas
-            disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
-          />
+          <div className="glass-card p-6 h-full flex flex-col">
+            <DrawingCanvas
+              disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
+            />
+          </div>
         </motion.div>
 
         {/* Right Sidebar - Chat */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="w-80 flex flex-col"
+          className="w-80 h-full"
         >
-          <ChatPanel />
+          <div className="glass-card p-6 h-full flex flex-col">
+            <ChatPanel className="flex-1" />
+          </div>
         </motion.div>
       </div>
 

@@ -181,12 +181,12 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [width, height]);
 
   return (
-    <div className="drawing-area">
+    <div className="h-full flex flex-col">
       {/* Drawing Tools */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="tools-panel"
+        className="tools-panel flex-shrink-0 mb-4"
       >
         {/* Color Picker */}
         <div className="color-picker">
@@ -233,7 +233,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg border border-green-400/30"
+          className="mb-4 p-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg border border-green-400/30 flex-shrink-0"
         >
           <div className="text-center">
             <div className="text-white/80 text-sm mb-2">🎯 Your word to draw:</div>
@@ -247,56 +247,58 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </motion.div>
       )}
 
-      {/* Canvas */}
-      <motion.canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        className={`drawing-canvas ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        onMouseDown={startDrawing}
-        onMouseMove={continueDrawing}
-        onMouseUp={stopDrawing}
-        onMouseLeave={stopDrawing}
-        onTouchStart={startDrawing}
-        onTouchMove={continueDrawing}
-        onTouchEnd={stopDrawing}
-        style={{
-          maxWidth: '100%',
-          height: 'auto',
-          aspectRatio: `${width}/${height}`,
-        }}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3 }}
-      />
+      {/* Canvas Container */}
+      <div className="flex-1 flex items-center justify-center relative min-h-0">
+        <motion.canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          className={`drawing-canvas ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+          onMouseDown={startDrawing}
+          onMouseMove={continueDrawing}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={continueDrawing}
+          onTouchEnd={stopDrawing}
+          style={{
+            maxWidth: '100%',
+            maxHeight: '100%',
+            width: 'auto',
+            height: 'auto',
+            aspectRatio: `${width}/${height}`,
+          }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+        />
 
-      {/* Drawing Status */}
-      {disabled && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"
-        >
-          <div className="glass-card p-4 text-center">
+        {/* Drawing Status */}
+        {disabled && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"
+          >
+            <div className="glass-card p-4 text-center">
             <p className="text-white font-semibold">👀 Watch and Guess!</p>
             <p className="text-white/80 text-sm">It's someone else's turn to draw</p>
           </div>
         </motion.div>
-      )}
+        )}
 
-      {/* Drawing Instructions */}
-      {!disabled && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center text-white/80 text-sm mt-2"
-        >
-          <p>🎨 Your turn to draw! Use mouse or touch to create your masterpiece</p>
-        </motion.div>
-      )}
+        {/* Drawing Instructions */}
+        {!disabled && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-center text-white/80 text-sm mt-2"
+          >
+            <p>🎨 Your turn to draw! Use mouse or touch to create your masterpiece</p>
+          </motion.div>
+        )}
+      </div>
     </div>
   );
-};
-
-export default DrawingCanvas;
+};export default DrawingCanvas;
