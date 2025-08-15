@@ -20,5 +20,5 @@ export default new DataSource({
   entities: [Game, Player, Round, DrawingData],
   migrations: ['src/database/migrations/*.ts'],
   synchronize: configService.get('NODE_ENV') === 'development',
-  logging: configService.get('NODE_ENV') === 'development',
+  logging: false, // Disable SQL query logging for cleaner console output
 });

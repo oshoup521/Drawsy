@@ -19,7 +19,7 @@ import { DrawingData } from '../entities/drawing-data.entity';
         database: configService.get('DB_DATABASE') || 'drawsy',
         entities: [Game, Player, Round, DrawingData],
         synchronize: configService.get('NODE_ENV') === 'development',
-        logging: configService.get('NODE_ENV') === 'development',
+        logging: false, // Disable SQL query logging for cleaner console output
       }),
       inject: [ConfigService],
     }),

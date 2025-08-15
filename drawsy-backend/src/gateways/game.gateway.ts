@@ -165,11 +165,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Get the current game state to find the drawer
       const gameState = await this.gameService.getGameState(clientInfo.roomId);
       
-      console.log('🎮 Backend sending start_game event with data:', {
-        ...gameData,
-        currentWord: undefined,
-      });
-      
       // Broadcast game start to all players (without the word)
       this.server.to(clientInfo.roomId).emit('start_game', {
         ...gameData,

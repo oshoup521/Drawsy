@@ -150,9 +150,7 @@ class SocketService {
   }
 
   onGameStart(callback: (data: Parameters<SocketEvents['start_game_response']>[0]) => void) {
-    console.log('🔌 Setting up start_game event listener');
     this.on('start_game', (data) => {
-      console.log('🎮 Frontend received start_game event:', data);
       callback(data);
     });
   }
@@ -196,7 +194,6 @@ class SocketService {
   // Generic event handlers
   private emit(event: string, data?: any) {
     if (this.socket?.connected) {
-      console.log(`📤 Emitting: ${event}`, data);
       this.socket.emit(event, data);
     } else {
       console.warn('⚠️ Socket not connected, cannot emit:', event);
@@ -205,10 +202,7 @@ class SocketService {
 
   private on(event: string, callback: (data: any) => void) {
     if (this.socket) {
-      this.socket.on(event, (data) => {
-        console.log(`📥 Received: ${event}`, data);
-        callback(data);
-      });
+      this.socket.on(event, callback);
     }
   }
 
@@ -224,7 +218,6 @@ class SocketService {
   // Remove all listeners
   removeAllListeners() {
     if (this.socket) {
-      console.log('🧹 Removing all socket listeners');
       this.socket.removeAllListeners();
     }
   }
@@ -232,7 +225,6 @@ class SocketService {
   // Remove specific listener
   removeListener(event: string) {
     if (this.socket) {
-      console.log(`🧹 Removing listener for: ${event}`);
       this.socket.off(event);
     }
   }

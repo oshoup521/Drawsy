@@ -19,7 +19,6 @@ const GameRoom: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [showScores, setShowScores] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
   
   const {
     gameState,
@@ -103,7 +102,6 @@ const GameRoom: React.FC = () => {
     // Cleanup function
     return () => {
       mounted = false;
-      console.log('🧹 GameRoom cleanup: disconnecting socket');
       socketService.disconnect();
       setConnected(false);
       resetGame();
@@ -113,8 +111,6 @@ const GameRoom: React.FC = () => {
   // Set up socket event listeners
   useEffect(() => {
     if (!isConnected) return;
-
-    console.log('🔌 Setting up socket event listeners');
 
     // Player events
     const handlePlayerJoined = (data: any) => {
@@ -134,8 +130,12 @@ const GameRoom: React.FC = () => {
     };
 
     const handlePlayerLeft = (data: any) => {
+      // Get fresh state instead of relying on closure
       const currentState = useGameStore.getState();
-      const player = currentState.gameState?.players.find(p => p.userId === data.userId);
+      const freshGameState = currentState.gameState;
+      
+      const player = freshGameState?.players.find(p => p.userId === data.userId);
+      
       if (player) {
         removePlayer(data.userId);
         
@@ -156,8 +156,6 @@ const GameRoom: React.FC = () => {
     };
 
     const handleHostChanged = (data: { previousHost: { userId: string; name: string }; newHost: { userId: string; name: string } }) => {
-      console.log('👑 Host changed event received:', data);
-      
       // Update the host in the game state
       updateHost(data.newHost.userId);
       
@@ -177,29 +175,55 @@ const GameRoom: React.FC = () => {
 
     // Game events
     const handleGameStart = (data: any) => {
-      console.log('🎮 Game started event received:', data);
+      // Get fresh state instead of relying on closure
+      const currentState = useGameStore.getState();
+      const freshGameState = currentState.gameState;
       
-      // Force re-render with local state
-      setGameStarted(true);
+      // Reset the starting state since game has started
+      setIsStarting(false);
       
-      // Use updateGameState which accepts a function
-      updateGameState((currentGameState) => {
-        console.log('📊 Current game state before update:', currentGameState);
+      // Create new game state directly - PRESERVE existing players array
+      if (freshGameState && freshGameState.players && freshGameState.players.length > 0) {
+        const newGameState = {
+          ...freshGameState, // Keep all existing state including players
+          status: 'playing' as const,
+          currentDrawerUserId: data.drawerUserId,
+          currentRound: data.currentRound,
+          wordLength: data.wordLength,
+          // DON'T spread data - it might override players array
+        };
         
-        if (currentGameState) {
-          const newGameState = {
-            ...currentGameState,
-            status: 'playing' as const,
-            currentDrawerUserId: data.drawerUserId,
-            currentRound: data.currentRound,
-            wordLength: data.wordLength,
-          };
-          console.log('📊 New state after update:', newGameState);
-          return newGameState;
+        // Use setGameState for immediate state update
+        setGameState(newGameState);
+        
+        // Check for lost players and recover if needed
+        setTimeout(() => {
+          const currentState = useGameStore.getState().gameState;
+          
+          if (!currentState?.players || currentState.players.length === 0) {
+            // Try to recover by fetching fresh game state
+            if (roomId) {
+              gameApi.getGameState(roomId).then(freshState => {
+                setGameState(freshState);
+              }).catch(console.error);
+            }
+          }
+        }, 100);
+      } else {
+        // Fetch fresh game state to recover
+        if (roomId) {
+          gameApi.getGameState(roomId).then(freshState => {
+            setGameState({
+              ...freshState,
+              status: 'playing' as const,
+              currentDrawerUserId: data.drawerUserId,
+              currentRound: data.currentRound,
+              wordLength: data.wordLength,
+            });
+          }).catch(console.error);
         }
-        return currentGameState;
-      });
-
+      }
+      
       // Add a system message to indicate game started and chat continues
       addChatMessage({
         userId: 'system',
@@ -213,7 +237,6 @@ const GameRoom: React.FC = () => {
 
     // Chat events
     const handleChatMessage = (data: any) => {
-      console.log('💬 Received chat message:', data);
       addChatMessage({
         userId: data.userId,
         message: data.message,
@@ -225,8 +248,6 @@ const GameRoom: React.FC = () => {
 
     // Correct guess events
     const handleCorrectGuess = (data: { userId: string; playerName: string; scoreAwarded: number }) => {
-      console.log('🎯 Correct guess event received:', data);
-      
       // Update the player's score in the game state
       updatePlayer({
         userId: data.userId,
@@ -256,25 +277,28 @@ const GameRoom: React.FC = () => {
 
     // Cleanup function - this useEffect will run whenever isConnected changes
     return () => {
-      console.log('🧹 Cleaning up socket event listeners');
       // Note: socketService should ideally have removeListener methods
     };
-  }, [isConnected, updatePlayer, removePlayer, updateHost, addChatMessage, updateGameState]);
+  }, [isConnected, updatePlayer, removePlayer, updateHost, addChatMessage]);
 
   const handleStartGame = async () => {
     if (!roomId || !gameState) return;
+    
+    // Prevent multiple calls if already starting or game has started
+    if (isStarting || gameState.status !== 'waiting') {
+      return;
+    }
 
     setIsStarting(true);
     try {
-      await gameApi.startGame(roomId);
+      // Only use WebSocket to start game - the socket handler will update DB and broadcast to all clients
       socketService.startGame();
-      toast.success('Game started!');
     } catch (error) {
       console.error('Failed to start game:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to start game');
-    } finally {
-      setIsStarting(false);
+      setIsStarting(false); // Reset loading state on error
     }
+    // Note: setIsStarting(false) will be called when we receive the start_game event
   };
 
   const handleLeaveRoom = () => {
@@ -311,14 +335,8 @@ const GameRoom: React.FC = () => {
   const isHost = gameState.players.find(p => p.userId === currentUser.userId)?.isHost;
   const canStartGame = isHost && gameState.status === 'waiting' && gameState.players.length >= 2;
 
-  console.log('🎮 GameRoom render - Current game status:', gameState.status);
-  console.log('🎮 GameRoom render - Is host:', isHost);
-  console.log('🎮 GameRoom render - Can start game:', canStartGame);
-  console.log('🎮 GameRoom render - Game started flag:', gameStarted);
-
-  // Render lobby for waiting state (and game hasn't been started via socket)
-  if (gameState.status === 'waiting' && !gameStarted) {
-    console.log('🎮 Rendering lobby (waiting state)');
+  // Render lobby for waiting state
+  if (gameState.status === 'waiting') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
         {/* Header */}
@@ -472,7 +490,6 @@ const GameRoom: React.FC = () => {
   }
 
   // Render game area for playing state
-  console.log('🎮 Rendering game area (playing state)');
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900">
       {/* Game Header */}
