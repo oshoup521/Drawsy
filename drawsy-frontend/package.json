@@ -1,0 +1,72 @@
+{
+  "name": "aivengers-scribble-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Scribbl AI - A multiplayer drawing and guessing game",
+  "private": true,
+  "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/icons-material": "^5.15.0",
+    "@mui/material": "^5.15.0",
+    "@testing-library/jest-dom": "^6.1.0",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.5.0",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
+    "ajv": "^8.17.1",
+    "ajv-keywords": "^5.1.0",
+    "axios": "^1.6.0",
+    "framer-motion": "^10.16.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.20.0",
+    "react-scripts": "5.0.1",
+    "socket.io-client": "^4.7.4",
+    "typescript": "^4.9.5",
+    "web-vitals": "^3.5.0",
+    "zustand": "^4.4.7"
+  },
+  "scripts": {
+    "start": "set PORT=3001 && react-scripts start",
+    "start:unix": "PORT=3001 react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,md}\""
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/uuid": "^9.0.7",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^8.45.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.1.0",
+    "tailwindcss": "^3.4.0"
+  },
+  "proxy": "http://localhost:3000"
+}

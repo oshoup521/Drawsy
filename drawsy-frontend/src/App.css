@@ -1,0 +1,541 @@
+.App { min-height: 100vh; display: flex; flex-direction: column; }
+
+.App-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+  color: white;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Game Layout */
+.game-layout { 
+  display: grid; 
+  grid-template-columns: 1fr 300px; 
+  grid-template-rows: auto 1fr auto; 
+  gap: 20px; 
+  padding: 20px; 
+  min-height: calc(100vh - 80px); 
+}
+
+/* Glass Card Effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+}
+
+.game-header {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  color: white;
+}
+
+.game-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.game-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drawing-area {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.tools-panel {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.color-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.color-button:hover {
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.color-button.active {
+  transform: scale(1.2);
+  border-color: white;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.brush-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.brush-slider {
+  width: 100px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  outline: none;
+  cursor: pointer;
+}
+
+.players-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.players-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.player-item {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.player-item.current-drawer {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%);
+  border: 1px solid rgba(102, 126, 234, 0.5);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+}
+
+.chat-panel {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 20px;
+  color: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 140px);
+  overflow: hidden;
+  min-width: 0; /* Prevent flex item from overflowing */
+  word-wrap: break-word;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 16px;
+  padding: 8px 12px 8px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  min-height: 0;
+  max-height: calc(100% - 120px);
+}
+
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.chat-message {
+  margin-bottom: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.chat-message:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.chat-message.ai-message {
+  background: rgba(102, 126, 234, 0.15);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+/* Chat message content styling */
+.chat-message .flex {
+  margin-bottom: 4px;
+}
+
+.chat-message p {
+  line-height: 1.4;
+  margin: 0;
+  padding-top: 2px;
+}
+
+.chat-input-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: white;
+  font-size: 14px;
+  line-height: 1.4;
+  transition: all 0.2s ease;
+}
+
+.chat-input:focus {
+  outline: none;
+  border-color: rgba(102, 126, 234, 0.6);
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.chat-send-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+}
+
+.chat-send-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.chat-bottom-area {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-quick-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.chat-quick-button {
+  font-size: 11px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.chat-quick-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.chat-tip {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.3;
+  padding: 4px 8px;
+}
+
+/* Guess Area Styling */
+.guess-area {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.guess-input-container {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  width: 100%;
+}
+
+.guess-input {
+  flex: 1;
+  min-width: 0; /* Allow input to shrink */
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: white;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.guess-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.guess-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.guess-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  min-width: fit-content;
+}
+
+.guess-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.guess-btn:disabled {
+  background: rgba(255, 255, 255, 0.2);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.guess-tip {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) { 
+  .game-layout { 
+    grid-template-columns: 1fr; 
+    grid-template-rows: auto auto 1fr auto; 
+  } 
+  .game-sidebar { 
+    grid-row: 2; 
+    flex-direction: row; 
+    overflow-x: auto; 
+  } 
+  .players-panel, .chat-panel { 
+    min-width: 300px; 
+    height: auto; 
+    max-height: 60vh; 
+  }
+  
+  .guess-input-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .guess-btn {
+    width: 100%;
+  } 
+  
+  .chat-messages {
+    max-height: calc(60vh - 140px);
+  }
+  .chat-bottom-area {
+    max-height: 100px;
+  }
+  .chat-quick-actions {
+    gap: 4px;
+  }
+  .chat-quick-button {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 768px) { 
+  .players-panel, .chat-panel { 
+    min-width: 250px; 
+    max-height: 50vh;
+    padding: 16px;
+  } 
+  .chat-messages {
+    max-height: calc(50vh - 120px);
+    padding: 6px 8px 6px 2px;
+  }
+  
+  .chat-message {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  
+  .chat-message.ai-message {
+    padding: 10px 12px;
+  }
+  
+  .guess-area {
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+  
+  .guess-input-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .guess-btn {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 768px) { 
+  .game-layout { 
+    padding: 10px; 
+    gap: 12px; 
+  } 
+  .game-header { 
+    padding: 12px 16px; 
+    flex-direction: column; 
+    gap: 8px; 
+    text-align: center; 
+  } 
+  .drawing-area { 
+    padding: 16px; 
+  } 
+  .tools-panel { 
+    justify-content: center; 
+  } 
+  .game-sidebar { 
+    flex-direction: column; 
+  } 
+  .players-panel, .chat-panel { 
+    min-width: auto; 
+    max-height: 50vh; 
+  } 
+  .chat-messages {
+    max-height: calc(50vh - 140px);
+  }
+  .chat-bottom-area {
+    max-height: 80px;
+  }
+  .chat-quick-actions {
+    gap: 3px;
+  }
+  .chat-quick-button {
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+  .chat-tip {
+    font-size: 9px;
+    margin-top: 4px;
+  }
+}
