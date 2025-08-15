@@ -11,8 +11,8 @@ interface DrawingCanvasProps {
 }
 
 const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
-  width = 600,
-  height = 400,
+  width = 800,
+  height = 500,
   disabled = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -189,39 +189,21 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-4 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg border border-green-400/30 flex-shrink-0"
+          className="mb-3 p-3 bg-gradient-to-r from-green-500/20 to-emerald-500/20 rounded-lg border border-green-400/30 flex-shrink-0"
         >
           <div className="text-center">
-            <div className="text-white/80 text-sm mb-2">🎯 Your word to draw:</div>
-            <div className="text-2xl font-bold text-white tracking-wider">
+            <div className="text-white/80 text-xs mb-1">🎯 Your word to draw:</div>
+            <div className="text-xl font-bold text-white tracking-wider">
               {gameState.currentWord.toUpperCase()}
             </div>
-            <div className="text-white/60 text-xs mt-2">
+            <div className="text-white/60 text-xs mt-1">
               Draw this so others can guess it!
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Canvas Tools - Only Clear Button */}
-      {!disabled && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center mb-4 flex-shrink-0"
-        >
-          <button
-            onClick={clearCanvas}
-            className="btn-secondary"
-            disabled={disabled}
-            title="Clear canvas"
-          >
-            🗑️ Clear
-          </button>
-        </motion.div>
-      )}
-
-      {/* Canvas Container */}
+      {/* Canvas Container - Now takes up most of the space */}
       <div className="flex-1 flex items-center justify-center relative min-h-0">
         <motion.canvas
           ref={canvasRef}
@@ -237,7 +219,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           onTouchEnd={stopDrawing}
           style={{
             maxWidth: '100%',
-            maxHeight: 'calc(100% - 20px)',
+            maxHeight: '100%',
             width: 'auto',
             height: 'auto',
             aspectRatio: `${width}/${height}`,
@@ -247,18 +229,31 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           transition={{ delay: 0.3 }}
         />
 
-
+        {/* Floating Clear Button - Top Right Corner */}
+        {!disabled && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
+            onClick={clearCanvas}
+            className="absolute top-3 right-3 w-8 h-8 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-sm transition-all hover:scale-110 z-10 backdrop-blur-sm border border-white/20 shadow-lg"
+            disabled={disabled}
+            title="Clear canvas"
+          >
+            🗑️
+          </motion.button>
+        )}
       </div>
 
-      {/* Drawing Instructions - Moved outside and made smaller */}
+      {/* Drawing Instructions - Smaller and at bottom */}
       {!disabled && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}
-          className="text-center text-white/60 text-xs py-1 flex-shrink-0"
+          className="text-center text-white/50 text-xs py-1 flex-shrink-0"
         >
-          🎨 Your turn to draw! Use the color palette to select colors and brush size.
+          🎨 Use the color palette to select colors and brush size
         </motion.div>
       )}
     </div>

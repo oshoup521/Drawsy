@@ -559,7 +559,7 @@ const GameRoom: React.FC = () => {
           className="flex-1 h-full flex flex-col gap-3"
         >
           {/* Drawing Canvas */}
-          <div className="glass-card p-6 h-[calc(100%-120px)] flex flex-col">
+          <div className="glass-card p-4 h-[calc(100%-120px)] flex flex-col">
             <DrawingCanvas
               disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
             />
