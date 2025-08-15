@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { DrawingData, DRAWING_COLORS } from '../types/game';
+import { DrawingData } from '../types/game';
 import { useGameStore, useCurrentUser, useCurrentDrawer } from '../store/gameStore';
 import socketService from '../services/socket';
 
@@ -247,19 +247,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           transition={{ delay: 0.3 }}
         />
 
-        {/* Drawing Status */}
-        {disabled && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"
-          >
-            <div className="glass-card p-3 text-center">
-              <p className="text-white font-semibold text-sm">👀 Watch and Guess!</p>
-              <p className="text-white/80 text-xs">It's someone else's turn to draw</p>
-            </div>
-          </motion.div>
-        )}
+
       </div>
 
       {/* Drawing Instructions - Moved outside and made smaller */}
