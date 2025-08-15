@@ -472,6 +472,92 @@ export class GameService {
     };
   }
 
+  async removePlayer(roomId: string, userId: string) {
+    const game = await this.gameRepository.findOne({
+      where: { roomId },
+      relations: ['players'],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    const player = game.players.find(p => p.userId === userId);
+    if (!player) {
+      // Player not found, nothing to remove
+      return null;
+    }
+
+    const wasHost = player.isHost;
+    
+    // Remove the player
+    await this.playerRepository.remove(player);
+
+    // If the host left and there are other players, assign a new host
+    if (wasHost) {
+      const remainingPlayers = await this.playerRepository.find({
+        where: { gameId: game.id },
+      });
+
+      if (remainingPlayers.length > 0) {
+        // Pick a random player to be the new host
+        const randomIndex = Math.floor(Math.random() * remainingPlayers.length);
+        const newHost = remainingPlayers[randomIndex];
+        
+        // Update the new host
+        newHost.isHost = true;
+        await this.playerRepository.save(newHost);
+
+        // Update the game's hostUserId
+        game.hostUserId = newHost.userId;
+        await this.gameRepository.save(game);
+
+        return {
+          playerRemoved: {
+            userId: player.userId,
+            name: player.name,
+            wasHost: true,
+          },
+          newHost: {
+            userId: newHost.userId,
+            name: newHost.name,
+          },
+          remainingPlayerCount: remainingPlayers.length,
+        };
+      } else {
+        // No remaining players, game should be deleted or marked as finished
+        game.status = GameStatus.FINISHED;
+        await this.gameRepository.save(game);
+
+        return {
+          playerRemoved: {
+            userId: player.userId,
+            name: player.name,
+            wasHost: true,
+          },
+          newHost: null,
+          remainingPlayerCount: 0,
+          gameEnded: true,
+        };
+      }
+    }
+
+    // Regular player left, not the host
+    const remainingPlayers = await this.playerRepository.find({
+      where: { gameId: game.id },
+    });
+
+    return {
+      playerRemoved: {
+        userId: player.userId,
+        name: player.name,
+        wasHost: false,
+      },
+      newHost: null,
+      remainingPlayerCount: remainingPlayers.length,
+    };
+  }
+
   private generateRoomId(): string {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }

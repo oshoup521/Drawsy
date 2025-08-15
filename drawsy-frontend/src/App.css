@@ -153,6 +153,60 @@
   margin-top: 16px;
   flex: 1;
   overflow-y: auto;
+  min-height: 0;
+  max-height: 400px;
+  padding-right: 8px;
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar styling for players list */
+.players-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.players-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.players-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.players-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Lobby players list specific styling */
+.lobby-players-list {
+  overflow-y: auto;
+  max-height: 60vh;
+  min-height: 200px;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  scroll-behavior: smooth;
+}
+
+.lobby-players-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lobby-players-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.lobby-players-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.lobby-players-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .player-item {

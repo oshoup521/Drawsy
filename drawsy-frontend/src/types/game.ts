@@ -14,6 +14,7 @@ export interface GameState {
   players: Player[];
   currentRound: number;
   status: 'waiting' | 'playing' | 'finished';
+  hostUserId?: string;
   currentDrawerUserId?: string;
   currentWord?: string;
   wordLength?: number;

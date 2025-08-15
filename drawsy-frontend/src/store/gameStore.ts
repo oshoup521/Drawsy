@@ -51,6 +51,7 @@ interface GameStore {
   updatePlayer: (player: Player) => void;
   removePlayer: (userId: string) => void;
   updatePlayerScore: (userId: string, score: number) => void;
+  updateHost: (newHostUserId: string) => void;
   
   // UI Actions
   setLoading: (loading: boolean) => void;
@@ -179,6 +180,26 @@ export const useGameStore = create<GameStore>()(
           gameState: {
             ...state.gameState,
             players: updatedPlayers,
+          },
+        };
+      });
+    },
+
+    updateHost: (newHostUserId) => {
+      set((state) => {
+        if (!state.gameState) return state;
+
+        const updatedPlayers = state.gameState.players.map((player) => ({
+          ...player,
+          isHost: player.userId === newHostUserId,
+        }));
+
+        return {
+          ...state,
+          gameState: {
+            ...state.gameState,
+            players: updatedPlayers,
+            hostUserId: newHostUserId,
           },
         };
       });

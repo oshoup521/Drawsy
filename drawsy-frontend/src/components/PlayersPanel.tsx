@@ -72,7 +72,7 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
       )}
 
       {/* Players List */}
-      <div className="players-list">
+      <div className="players-list flex-1 min-h-0">
         <AnimatePresence>
           {sortedPlayers.map((player, index) => (
             <motion.div

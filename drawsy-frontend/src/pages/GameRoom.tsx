@@ -29,6 +29,7 @@ const GameRoom: React.FC = () => {
     setConnected,
     updatePlayer,
     removePlayer,
+    updateHost,
     addChatMessage,
     resetGame,
   } = useGameStore();
@@ -145,6 +146,26 @@ const GameRoom: React.FC = () => {
       }
     };
 
+    const handleHostChanged = (data: { previousHost: { userId: string; name: string }; newHost: { userId: string; name: string } }) => {
+      console.log('👑 Host changed event received:', data);
+      
+      // Update the host in the game state
+      updateHost(data.newHost.userId);
+      
+      // Add a system message
+      addChatMessage({
+        userId: 'system',
+        message: `👑 ${data.previousHost.name} left and ${data.newHost.name} is now the host!`,
+        isAI: true,
+        timestamp: Date.now(),
+      });
+
+      // Show toast notification
+      toast(`👑 ${data.newHost.name} is now the host!`, {
+        icon: '👑',
+      });
+    };
+
     // Game events
     const handleGameStart = (data: any) => {
       console.log('🎮 Game started event received:', data);
@@ -218,6 +239,7 @@ const GameRoom: React.FC = () => {
     // Set up the event listeners
     socketService.onPlayerJoined(handlePlayerJoined);
     socketService.onPlayerLeft(handlePlayerLeft);
+    socketService.onHostChanged(handleHostChanged);
     socketService.onGameStart(handleGameStart);
     socketService.onChatMessage(handleChatMessage);
     socketService.onCorrectGuess(handleCorrectGuess);
@@ -227,7 +249,7 @@ const GameRoom: React.FC = () => {
       console.log('🧹 Cleaning up socket event listeners');
       // Note: socketService should ideally have removeListener methods
     };
-  }, [isConnected, updatePlayer, removePlayer, addChatMessage, updateGameState]);
+  }, [isConnected, updatePlayer, removePlayer, updateHost, addChatMessage, updateGameState]);
 
   const handleStartGame = async () => {
     if (!roomId || !gameState) return;
@@ -363,7 +385,7 @@ const GameRoom: React.FC = () => {
                 👥 Players ({gameState.players.length}/{gameState.playerCount})
               </h2>
               
-              <div className="space-y-3 flex-1 overflow-y-auto min-h-0">
+              <div className="lobby-players-list space-y-3 flex-1 min-h-0">
                 {gameState.players.map((player) => (
                   <div
                     key={player.userId}

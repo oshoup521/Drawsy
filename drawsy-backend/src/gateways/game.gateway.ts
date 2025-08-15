@@ -101,17 +101,54 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Client ${client.id} disconnected from room ${clientInfo.roomId}`);
       
       // Only emit player_left after a delay to avoid spam from reconnections
-      setTimeout(() => {
+      setTimeout(async () => {
         // Check if the user has any other active connections
         const hasOtherConnections = Array.from(this.connectedClients.values())
           .some(conn => conn.userId === clientInfo.userId && conn.roomId === clientInfo.roomId);
         
         if (!hasOtherConnections) {
           // User has no other connections, they actually left
-          client.to(clientInfo.roomId).emit('player_left', {
-            userId: clientInfo.userId,
-          });
-          this.logger.log(`Player ${clientInfo.userId} left room ${clientInfo.roomId}`);
+          try {
+            const removeResult = await this.gameService.removePlayer(clientInfo.roomId, clientInfo.userId);
+            
+            if (removeResult) {
+              // Emit basic player_left event
+              client.to(clientInfo.roomId).emit('player_left', {
+                userId: clientInfo.userId,
+              });
+
+              // If the host left and there's a new host, notify everyone
+              if (removeResult.playerRemoved.wasHost && removeResult.newHost) {
+                this.server.to(clientInfo.roomId).emit('host_changed', {
+                  previousHost: {
+                    userId: removeResult.playerRemoved.userId,
+                    name: removeResult.playerRemoved.name,
+                  },
+                  newHost: {
+                    userId: removeResult.newHost.userId,
+                    name: removeResult.newHost.name,
+                  },
+                });
+                this.logger.log(`Host changed in room ${clientInfo.roomId}: ${removeResult.newHost.name} is now host`);
+              }
+
+              // If the game ended because no players left
+              if (removeResult.gameEnded) {
+                this.server.to(clientInfo.roomId).emit('game_ended', {
+                  reason: 'all_players_left'
+                });
+                this.logger.log(`Game ended in room ${clientInfo.roomId} - no players remaining`);
+              }
+
+              this.logger.log(`Player ${clientInfo.userId} left room ${clientInfo.roomId}`);
+            }
+          } catch (error) {
+            this.logger.error(`Error removing player ${clientInfo.userId} from room ${clientInfo.roomId}:`, error);
+            // Still emit the basic player_left event as fallback
+            client.to(clientInfo.roomId).emit('player_left', {
+              userId: clientInfo.userId,
+            });
+          }
         }
       }, 3000); // Wait 3 seconds before confirming they left
     }

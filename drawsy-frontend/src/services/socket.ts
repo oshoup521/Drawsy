@@ -145,6 +145,10 @@ class SocketService {
     this.on('player_left', callback);
   }
 
+  onHostChanged(callback: (data: { previousHost: { userId: string; name: string }; newHost: { userId: string; name: string } }) => void) {
+    this.on('host_changed', callback);
+  }
+
   onGameStart(callback: (data: Parameters<SocketEvents['start_game_response']>[0]) => void) {
     console.log('🔌 Setting up start_game event listener');
     this.on('start_game', (data) => {
