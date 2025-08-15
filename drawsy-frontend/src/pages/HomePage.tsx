@@ -28,7 +28,7 @@ const HomePage: React.FC = () => {
       toast.success(`Game room created! Room ID: ${response.roomId}`);
       
       // Store user data in localStorage
-      localStorage.setItem('scribbl_user', JSON.stringify({
+      localStorage.setItem('drawsy_user', JSON.stringify({
         userId: response.hostUserId,
         name: playerName.trim(),
         roomId: response.roomId,
@@ -63,7 +63,7 @@ const HomePage: React.FC = () => {
           className="mb-8"
         >
           <h1 className="text-4xl font-bold text-white mb-2 font-['Fredoka']">
-            🎨 Scribbl AI
+            🎨 Drawsy
           </h1>
           <p className="text-white/80">
             Draw, Guess, Win with AI-powered fun!
@@ -125,7 +125,7 @@ const HomePage: React.FC = () => {
 
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="text-white/60 hover:text-white/80 text-sm transition-colors"
+            className="btn-tertiary w-full text-sm"
           >
             ⚙️ Game Settings
           </button>

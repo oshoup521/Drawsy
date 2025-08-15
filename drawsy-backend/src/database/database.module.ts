@@ -16,7 +16,7 @@ import { DrawingData } from '../entities/drawing-data.entity';
         port: parseInt(configService.get('DB_PORT')) || 5432,
         username: configService.get('DB_USERNAME') || 'postgres',
         password: configService.get('DB_PASSWORD') || 'password',
-        database: configService.get('DB_DATABASE') || 'scribbl_ai',
+        database: configService.get('DB_DATABASE') || 'drawsy',
         entities: [Game, Player, Round, DrawingData],
         synchronize: configService.get('NODE_ENV') === 'development',
         logging: configService.get('NODE_ENV') === 'development',

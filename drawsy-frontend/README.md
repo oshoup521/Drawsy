@@ -40,7 +40,7 @@ Copy `.env.example` to `.env` and update values as needed:
 ```
 REACT_APP_API_URL=http://localhost:3000
 REACT_APP_SOCKET_URL=http://localhost:3000
-REACT_APP_APP_NAME=Scribbl AI
+REACT_APP_APP_NAME=Drawsy
 REACT_APP_VERSION=1.0.0
 REACT_APP_ENABLE_ANALYTICS=false
 REACT_APP_ENABLE_DEBUG=true

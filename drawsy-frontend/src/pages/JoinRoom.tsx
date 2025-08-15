@@ -31,7 +31,7 @@ const JoinRoom: React.FC = () => {
       toast.success(`Joined room ${response.roomId}!`);
       
       // Store user data in localStorage
-      localStorage.setItem('scribbl_user', JSON.stringify({
+      localStorage.setItem('drawsy_user', JSON.stringify({
         userId: response.userId,
         name: playerName.trim(),
         roomId: response.roomId,

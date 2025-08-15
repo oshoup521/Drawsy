@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Scribbl AI - LLM Service",
+    title="Drawsy - LLM Service",
     description="AI service for generating funny responses, word suggestions, and chat interactions",
     version="1.0.0",
     docs_url="/docs",
@@ -49,7 +49,7 @@ async def root():
     """Health check endpoint."""
     return HealthResponse(
         status="healthy",
-        message="Scribbl AI LLM Service is running!"
+        message="Drawsy LLM Service is running!"
     )
 
 @app.get("/health", response_model=HealthResponse)

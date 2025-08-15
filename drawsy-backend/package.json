@@ -1,7 +1,7 @@
 {
-  "name": "aivengers-scribble-backend",
+  "name": "drawsy-backend",
   "version": "1.0.0",
-  "description": "Backend API for Scribbl AI game",
+  "description": "Backend API for Drawsy game",
   "author": "Aivengers Team",
   "private": true,
   "license": "UNLICENSED",

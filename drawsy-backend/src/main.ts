@@ -32,8 +32,8 @@ async function bootstrap() {
 
   // Swagger configuration
   const config = new DocumentBuilder()
-    .setTitle('Scribbl AI API')
-    .setDescription('REST API for Scribbl AI game')
+    .setTitle('Drawsy API')
+    .setDescription('REST API for Drawsy game')
     .setVersion('1.0')
     .addTag('game')
     .build();

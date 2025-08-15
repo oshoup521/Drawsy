@@ -1,7 +1,7 @@
 {
-  "name": "aivengers-scribble-frontend",
+  "name": "drawsy-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Scribbl AI - A multiplayer drawing and guessing game",
+  "description": "Frontend for Drawsy - A multiplayer drawing and guessing game",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.11.0",

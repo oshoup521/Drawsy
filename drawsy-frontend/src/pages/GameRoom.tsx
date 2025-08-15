@@ -49,7 +49,7 @@ const GameRoom: React.FC = () => {
       
       try {
         // Get user data from localStorage
-        const userData = localStorage.getItem('scribbl_user');
+        const userData = localStorage.getItem('drawsy_user');
         if (!userData) {
           if (mounted) {
             toast.error('Please join the room first');
@@ -269,7 +269,7 @@ const GameRoom: React.FC = () => {
 
   const handleLeaveRoom = () => {
     socketService.disconnect();
-    localStorage.removeItem('scribbl_user');
+    localStorage.removeItem('drawsy_user');
     navigate('/');
   };
 
@@ -318,7 +318,7 @@ const GameRoom: React.FC = () => {
         >
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold font-['Fredoka']">
-              🎨 Scribbl AI - Lobby
+              🎨 Drawsy - Lobby
             </h1>
             <div className="flex items-center gap-2 text-sm">
               <div 
@@ -472,7 +472,7 @@ const GameRoom: React.FC = () => {
       >
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold font-['Fredoka']">
-            🎨 Scribbl AI
+            🎨 Drawsy
           </h1>
           <div className="flex items-center gap-2 text-sm">
             <span className="px-3 py-1 bg-white/20 rounded-full">

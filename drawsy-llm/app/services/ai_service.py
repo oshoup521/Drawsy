@@ -147,7 +147,7 @@ class AIService:
                 "Authorization": f"Bearer {self.openrouter_api_key}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:8000",
-                "X-Title": "Scribbl AI Game"
+                "X-Title": "Drawsy Game"
             }
             
             prompt = f"""In a drawing guessing game, someone guessed "{guess}" but the correct answer is "{correct_word}".
@@ -178,7 +178,7 @@ Keep it short, friendly, and humorous. Maximum 20 words."""
                 "Authorization": f"Bearer {self.openrouter_api_key}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:8000",
-                "X-Title": "Scribbl AI Game"
+                "X-Title": "Drawsy Game"
             }
             
             prompt = f"""Generate a single word that would be good for a drawing game in the topic "{topic}".
@@ -215,7 +215,7 @@ Respond with just the word, nothing else."""
                 "Authorization": f"Bearer {self.openrouter_api_key}",
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:8000",
-                "X-Title": "Scribbl AI Game"
+                "X-Title": "Drawsy Game"
             }
             
             context = f" The current word being drawn is '{current_word}'." if current_word else ""
