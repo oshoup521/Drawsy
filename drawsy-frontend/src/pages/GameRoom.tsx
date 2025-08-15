@@ -380,12 +380,13 @@ const GameRoom: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="w-80 space-y-4 flex flex-col h-full"
           >
-            <div className="glass-card p-6 flex-1 flex flex-col">
+            {/* Players List */}
+            <div className="glass-card p-6 flex flex-col" style={{ height: 'calc(100% - 180px)' }}>
               <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
                 👥 Players ({gameState.players.length}/{gameState.playerCount})
               </h2>
               
-              <div className="lobby-players-list space-y-3 flex-1 min-h-0">
+              <div className="lobby-players-list space-y-3 flex-1 overflow-y-auto min-h-0">
                 {gameState.players.map((player) => (
                   <div
                     key={player.userId}
@@ -418,7 +419,7 @@ const GameRoom: React.FC = () => {
             </div>
 
             {/* Game Settings */}
-            <div className="glass-card p-6 flex-shrink-0">
+            <div className="glass-card p-6 flex-shrink-0" style={{ height: '164px' }}>
               <h3 className="text-lg font-bold text-white mb-3">🎮 Game Settings</h3>
               <div className="space-y-2 text-white/80">
                 <div className="flex justify-between">

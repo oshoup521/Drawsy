@@ -182,8 +182,8 @@
 /* Lobby players list specific styling */
 .lobby-players-list {
   overflow-y: auto;
-  max-height: 60vh;
-  min-height: 200px;
+  max-height: 400px;
+  min-height: 150px;
   padding-right: 8px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
