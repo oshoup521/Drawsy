@@ -60,7 +60,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     socketService.onDrawingData(handleDrawingData);
 
     return () => {
-      socketService.removeAllListeners();
+      // Don't remove all listeners - just this specific one would be better
+      // socketService.removeAllListeners(); 
+      // For now, we'll let the parent component handle cleanup
     };
   }, [addDrawingData]);
 

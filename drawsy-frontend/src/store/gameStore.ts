@@ -65,6 +65,7 @@ interface GameStore {
   
   // Reset
   resetGame: () => void;
+  resetAll: () => void;
 }
 
 export const useGameStore = create<GameStore>()(
@@ -252,6 +253,25 @@ export const useGameStore = create<GameStore>()(
 
     // Reset
     resetGame: () => {
+      set((state) => ({
+        gameState: null,
+        currentUser: null,
+        isConnected: false,
+        isDrawing: false,
+        currentWord: null,
+        // Preserve chat messages when resetting game
+        chatMessages: state.chatMessages,
+        drawingData: [],
+        currentDrawingColor: '#000000',
+        currentBrushSize: 4,
+        isLoading: false,
+        error: null,
+        showScores: false,
+      }));
+    },
+
+    // Reset all including chat messages
+    resetAll: () => {
       set({
         gameState: null,
         currentUser: null,

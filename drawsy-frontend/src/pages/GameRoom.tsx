@@ -34,6 +34,7 @@ const GameRoom: React.FC = () => {
     updateHost,
     addChatMessage,
     resetGame,
+    resetAll,
   } = useGameStore();
 
   const isCurrentUserDrawer = useIsCurrentUserDrawer();
@@ -211,6 +212,7 @@ const GameRoom: React.FC = () => {
         userId: data.userId,
         message: data.message,
         aiSuggestion: data.aiSuggestion,
+        isAI: data.isAI || false,
         timestamp: Date.now(),
       });
     };
@@ -272,6 +274,7 @@ const GameRoom: React.FC = () => {
   const handleLeaveRoom = () => {
     socketService.disconnect();
     localStorage.removeItem('drawsy_user');
+    resetAll(); // Use resetAll to clear everything including chat
     navigate('/');
   };
 
