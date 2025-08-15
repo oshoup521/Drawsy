@@ -9,11 +9,9 @@ interface ChatPanelProps {
 
 const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
   const [inputMessage, setInputMessage] = useState('');
-  const [guessMessage, setGuessMessage] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const guessRef = useRef<HTMLInputElement>(null);
 
   const { chatMessages, gameState } = useGameStore();
   const currentUser = useCurrentUser();
@@ -58,33 +56,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
     inputRef.current?.focus();
   };
 
-  const handleSendGuess = () => {
-    if (!guessMessage.trim() || !currentUser || !gameState?.roomId) return;
-
-    const guess = guessMessage.trim();
-    
-    console.log('📤 Sending guess:', { userId: currentUser.userId, guess });
-    
-    // Send guess via socket
-    socketService.sendGuess({
-      userId: currentUser.userId,
-      guess,
-    });
-
-    // Clear guess input
-    setGuessMessage('');
-    guessRef.current?.focus();
-  };
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSendMessage();
-    }
-  };
-
-  const handleGuessKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSendGuess();
     }
   };
 
@@ -114,9 +88,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
       {/* Header */}
       <div className="flex items-center gap-2 mb-4 flex-shrink-0">
         <h3 className="text-white font-semibold">💬 Chat</h3>
-        {isGamePlaying && !isCurrentUserDrawer && (
-          <span className="text-blue-300 text-sm">🎯 Guess the drawing!</span>
-        )}
       </div>
 
       {/* Messages */}
@@ -163,50 +134,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
       {/* Bottom section - inputs and actions */}
       <div className="flex-shrink-0 space-y-3">
-        {/* Guessing Area - Only shown during game for non-drawers */}
-        {isGamePlaying && !isCurrentUserDrawer && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="guess-area"
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-blue-300 font-semibold text-sm">🎯 Make Your Guess:</span>
-              {gameState?.wordLength && (
-                <span className="text-white/60 text-xs">
-                  ({gameState.wordLength} letters)
-                </span>
-              )}
-            </div>
-            
-            <div className="guess-input-container">
-              <input
-                ref={guessRef}
-                type="text"
-                value={guessMessage}
-                onChange={(e) => setGuessMessage(e.target.value)}
-                onKeyPress={handleGuessKeyPress}
-                placeholder="What do you think it is?"
-                className="guess-input"
-                maxLength={50}
-                autoComplete="off"
-              />
-              
-              <button
-                onClick={handleSendGuess}
-                disabled={!guessMessage.trim()}
-                className="guess-btn"
-              >
-                Guess!
-              </button>
-            </div>
-            
-            <div className="guess-tip">
-              💡 Tip: Look at the drawing and type what you think it represents!
-            </div>
-          </motion.div>
-        )}
-
         {/* Chat Input Area */}
         <div className="chat-bottom-area">
           {/* Regular Chat Input */}
@@ -217,7 +144,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={isGamePlaying && !isCurrentUserDrawer ? "Chat with other players..." : "Type your message..."}
+              placeholder="Type your message..."
               className="chat-input"
               maxLength={100}
               autoComplete="off"
@@ -290,7 +217,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
           {/* Typing Indicator */}
           <div className="chat-tip">
-            💡 Tip: Type your guesses here! AI will help with fun responses.
+            💡 Tip: Use the chat to talk with other players and get AI suggestions!
           </div>
         </div>
       </div>

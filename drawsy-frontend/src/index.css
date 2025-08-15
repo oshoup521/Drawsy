@@ -255,3 +255,42 @@ code {
     padding: 16px;
   }
 }
+
+/* Vertical Slider Styles */
+.vertical-slider {
+  writing-mode: bt-lr; /* IE */
+  appearance: slider-vertical;
+  -webkit-appearance: slider-vertical; /* WebKit */
+  width: 20px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  border-radius: 10px;
+}
+
+.vertical-slider:hover {
+  opacity: 1;
+}
+
+.vertical-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #4F46E5;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.vertical-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #4F46E5;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}

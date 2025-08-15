@@ -11,8 +11,8 @@ interface DrawingCanvasProps {
 }
 
 const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
-  width = 800,
-  height = 600,
+  width = 600,
+  height = 400,
   disabled = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -182,52 +182,6 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Drawing Tools */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="tools-panel flex-shrink-0 mb-4"
-      >
-        {/* Color Picker */}
-        <div className="color-picker">
-          {DRAWING_COLORS.map((color) => (
-            <button
-              key={color}
-              className={`color-button ${currentDrawingColor === color ? 'active' : ''}`}
-              style={{ backgroundColor: color }}
-              onClick={() => setDrawingColor(color)}
-              disabled={disabled}
-              title={`Select ${color}`}
-            />
-          ))}
-        </div>
-
-        {/* Brush Size */}
-        <div className="brush-size">
-          <span>Size:</span>
-          <input
-            type="range"
-            min="1"
-            max="20"
-            value={currentBrushSize}
-            onChange={(e) => setBrushSize(parseInt(e.target.value))}
-            className="brush-slider"
-            disabled={disabled}
-          />
-          <span>{currentBrushSize}px</span>
-        </div>
-
-        {/* Clear Button */}
-        <button
-          onClick={clearCanvas}
-          className="btn-secondary"
-          disabled={disabled}
-          title="Clear canvas"
-        >
-          🗑️ Clear
-        </button>
-      </motion.div>
-
       {/* Word Display for Drawer */}
       {isCurrentUserDrawer && gameState?.currentWord && (
         <motion.div
@@ -247,6 +201,24 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         </motion.div>
       )}
 
+      {/* Canvas Tools - Only Clear Button */}
+      {!disabled && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-center mb-4 flex-shrink-0"
+        >
+          <button
+            onClick={clearCanvas}
+            className="btn-secondary"
+            disabled={disabled}
+            title="Clear canvas"
+          >
+            🗑️ Clear
+          </button>
+        </motion.div>
+      )}
+
       {/* Canvas Container */}
       <div className="flex-1 flex items-center justify-center relative min-h-0">
         <motion.canvas
@@ -263,7 +235,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           onTouchEnd={stopDrawing}
           style={{
             maxWidth: '100%',
-            maxHeight: '100%',
+            maxHeight: 'calc(100% - 20px)',
             width: 'auto',
             height: 'auto',
             aspectRatio: `${width}/${height}`,
@@ -280,25 +252,27 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             animate={{ opacity: 1 }}
             className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"
           >
-            <div className="glass-card p-4 text-center">
-            <p className="text-white font-semibold">👀 Watch and Guess!</p>
-            <p className="text-white/80 text-sm">It's someone else's turn to draw</p>
-          </div>
-        </motion.div>
-        )}
-
-        {/* Drawing Instructions */}
-        {!disabled && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-center text-white/80 text-sm mt-2"
-          >
-            <p>🎨 Your turn to draw! Use mouse or touch to create your masterpiece</p>
+            <div className="glass-card p-3 text-center">
+              <p className="text-white font-semibold text-sm">👀 Watch and Guess!</p>
+              <p className="text-white/80 text-xs">It's someone else's turn to draw</p>
+            </div>
           </motion.div>
         )}
       </div>
+
+      {/* Drawing Instructions - Moved outside and made smaller */}
+      {!disabled && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="text-center text-white/60 text-xs py-1 flex-shrink-0"
+        >
+          🎨 Your turn to draw! Use the color palette to select colors and brush size.
+        </motion.div>
+      )}
     </div>
   );
-};export default DrawingCanvas;
+};
+
+export default DrawingCanvas;

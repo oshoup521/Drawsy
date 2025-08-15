@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import DrawingCanvas from '../components/DrawingCanvas';
 import ChatPanel from '../components/ChatPanel';
 import PlayersPanel from '../components/PlayersPanel';
+import GuessPanel from '../components/GuessPanel';
+import VerticalColorPalette from '../components/VerticalColorPalette';
 import { useGameStore, useIsCurrentUserDrawer } from '../store/gameStore';
 import { gameApi } from '../services/api';
 import socketService from '../services/socket';
@@ -512,16 +514,34 @@ const GameRoom: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Center - Drawing Canvas */}
+        {/* Vertical Color Palette */}
+        <motion.div
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex flex-col justify-center h-full"
+        >
+          <VerticalColorPalette 
+            disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
+            className="h-full"
+          />
+        </motion.div>
+
+        {/* Center - Drawing Canvas and Guess Panel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex-1 h-full"
+          className="flex-1 h-full flex flex-col gap-3"
         >
-          <div className="glass-card p-6 h-full flex flex-col">
+          {/* Drawing Canvas */}
+          <div className="glass-card p-6 h-[calc(100%-120px)] flex flex-col">
             <DrawingCanvas
               disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
             />
+          </div>
+          
+          {/* Guess Panel - Below Canvas */}
+          <div className="h-[100px] flex-shrink-0">
+            <GuessPanel />
           </div>
         </motion.div>
 
