@@ -33,6 +33,7 @@ const GameRoom: React.FC = () => {
     removePlayer,
     updateHost,
     addChatMessage,
+    setCurrentRoomId,
     resetGame,
     resetAll,
   } = useGameStore();
@@ -51,6 +52,11 @@ const GameRoom: React.FC = () => {
       if (!mounted) return;
       
       try {
+        // Set current room ID for chat persistence (clear chats if switching rooms)
+        if (mounted) {
+          setCurrentRoomId(roomId);
+        }
+
         // Get user data from localStorage
         const userData = localStorage.getItem('drawsy_user');
         if (!userData) {
@@ -77,7 +83,13 @@ const GameRoom: React.FC = () => {
           await socketService.connect(roomId, user.userId);
           setConnected(true);
 
-          toast.success('Connected to game room!');
+          // Check if there are existing chat messages from this room
+          const { chatMessages } = useGameStore.getState();
+          if (chatMessages.length > 0) {
+            toast.success('Welcome back! Your chat history has been restored.');
+          } else {
+            toast.success('Connected to game room!');
+          }
         }
       } catch (error) {
         console.error('Failed to initialize room:', error);

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import { subscribeWithSelector, persist } from 'zustand/middleware';
 import {
   GameState,
   Player,
@@ -18,6 +18,7 @@ interface GameStore {
   
   // Chat
   chatMessages: ChatMessage[];
+  currentRoomId: string | null; // Track current room for chat persistence
   
   // Drawing
   drawingData: DrawingData[];
@@ -36,6 +37,7 @@ interface GameStore {
   setConnected: (connected: boolean) => void;
   setDrawing: (drawing: boolean) => void;
   setCurrentWord: (word: string | null) => void;
+  setCurrentRoomId: (roomId: string | null) => void;
   
   // Chat Actions
   addChatMessage: (message: ChatMessage) => void;
@@ -69,35 +71,48 @@ interface GameStore {
 }
 
 export const useGameStore = create<GameStore>()(
-  subscribeWithSelector((set, get) => ({
-    // Initial State
-    gameState: null,
-    currentUser: null,
-    isConnected: false,
-    isDrawing: false,
-    currentWord: null,
-    chatMessages: [],
-    drawingData: [],
-    currentDrawingColor: '#000000',
-    currentBrushSize: 4,
-    isLoading: false,
-    error: null,
-    showScores: false,
+  subscribeWithSelector(
+    persist(
+      (set, get) => ({
+        // Initial State
+        gameState: null,
+        currentUser: null,
+        isConnected: false,
+        isDrawing: false,
+        currentWord: null,
+        chatMessages: [],
+        currentRoomId: null,
+        drawingData: [],
+        currentDrawingColor: '#000000',
+        currentBrushSize: 4,
+        isLoading: false,
+        error: null,
+        showScores: false,
 
-    // Game State Actions
-    setGameState: (gameState) => set({ gameState }),
+        // Game State Actions
+        setGameState: (gameState) => set({ gameState }),
+        
+        updateGameState: (updater) => {
+          set((state) => ({ ...state, gameState: updater(state.gameState) }));
+        },
+        
+        setCurrentUser: (user) => set({ currentUser: user }),
     
-    updateGameState: (updater) => {
-      set((state) => ({ ...state, gameState: updater(state.gameState) }));
-    },
-    
-    setCurrentUser: (user) => set({ currentUser: user }),
-    
-    setConnected: (connected) => set({ isConnected: connected }),
-    
-    setDrawing: (drawing) => set({ isDrawing: drawing }),
-    
-    setCurrentWord: (word) => set({ currentWord: word }),
+        setConnected: (connected) => set({ isConnected: connected }),
+        
+        setDrawing: (drawing) => set({ isDrawing: drawing }),
+        
+        setCurrentWord: (word) => set({ currentWord: word }),
+
+        setCurrentRoomId: (roomId) => {
+          set((state) => {
+            // If switching to a different room, clear chat messages
+            if (state.currentRoomId && state.currentRoomId !== roomId) {
+              return { currentRoomId: roomId, chatMessages: [] };
+            }
+            return { currentRoomId: roomId };
+          });
+        },
 
     // Chat Actions
     addChatMessage: (message) => {
@@ -279,6 +294,7 @@ export const useGameStore = create<GameStore>()(
         isDrawing: false,
         currentWord: null,
         chatMessages: [],
+        currentRoomId: null,
         drawingData: [],
         currentDrawingColor: '#000000',
         currentBrushSize: 4,
@@ -287,7 +303,17 @@ export const useGameStore = create<GameStore>()(
         showScores: false,
       });
     },
-  }))
+  }),
+  {
+    name: 'drawsy-game-store',
+    partialize: (state) => ({
+      chatMessages: state.chatMessages,
+      currentUser: state.currentUser,
+      currentRoomId: state.currentRoomId,
+    }),
+  }
+    )
+  )
 );
 
 // Selectors for better performance
