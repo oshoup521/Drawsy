@@ -319,23 +319,28 @@ const GameRoom: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {canStartGame && (
-              <button
-                onClick={handleStartGame}
-                disabled={isStarting}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50"
-              >
-                {isStarting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  <>🚀 Start Game</>
-                )}
-              </button>
+            {isHost ? (
+              canStartGame && (
+                <button
+                  onClick={handleStartGame}
+                  disabled={isStarting}
+                  className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isStarting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>🚀 Start Game</>
+                  )}
+                </button>
+              )
+            ) : (
+              gameState.players.length >= 2 && (
+                <span className="text-white/60">Waiting for the host to start the game...</span>
+              )
             )}
-            
             <button
               onClick={handleLeaveRoom}
               className="btn-secondary"
@@ -425,15 +430,7 @@ const GameRoom: React.FC = () => {
           </motion.div>
         </div>
 
-        {!isHost && gameState.players.length >= 2 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center p-6"
-          >
-            <p className="text-white/60">Waiting for the host to start the game...</p>
-          </motion.div>
-        )}
+  {/* The waiting text for non-hosts is now shown at the top, not here. */}
       </div>
     );
   }
