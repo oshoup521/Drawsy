@@ -83,13 +83,7 @@ const GameRoom: React.FC = () => {
           await socketService.connect(roomId, user.userId);
           setConnected(true);
 
-          // Check if there are existing chat messages from this room
-          const { chatMessages } = useGameStore.getState();
-          if (chatMessages.length > 0) {
-            toast.success('Welcome back! Your chat history has been restored.');
-          } else {
-            toast.success('Connected to game room!');
-          }
+          toast.success('Connected to game room!');
         }
       } catch (error) {
         console.error('Failed to initialize room:', error);
