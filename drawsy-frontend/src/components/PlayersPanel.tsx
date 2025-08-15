@@ -133,31 +133,6 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
         </AnimatePresence>
       </div>
 
-      {/* Game Status */}
-      <div className="mt-4 p-3 bg-white/5 rounded-lg border border-white/10">
-        <div className="text-center">
-          <div className="text-white/80 text-sm mb-2">Game Status</div>
-          
-          {gameState.status === 'waiting' && (
-            <div className="text-yellow-400">
-              ⏳ Waiting for players...
-            </div>
-          )}
-          
-          {gameState.status === 'playing' && (
-            <div className="text-green-400">
-              🎮 Game in Progress
-            </div>
-          )}
-          
-          {gameState.status === 'finished' && (
-            <div className="text-blue-400">
-              🏆 Game Finished
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Leaderboard Preview */}
       {sortedPlayers.length > 0 && (
         <motion.div
