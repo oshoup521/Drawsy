@@ -52,27 +52,10 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
         )}
       </div>
 
-      {/* Current Word Length (for non-drawers) */}
-      {gameState.status === 'playing' && gameState.wordLength && currentUser?.userId !== currentDrawer?.userId && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg border border-purple-400/30"
-        >
-          <div className="text-center">
-            <div className="text-white/80 text-sm mb-1">Word to guess:</div>
-            <div className="font-mono text-lg text-white tracking-wider">
-              {'_ '.repeat(gameState.wordLength).trim()}
-            </div>
-            <div className="text-white/60 text-xs mt-1">
-              {gameState.wordLength} letters
-            </div>
-          </div>
-        </motion.div>
-      )}
+  {/* ...existing code... */}
 
       {/* Players List */}
-      <div className="flex-1 overflow-y-auto min-h-0 mb-4">
+  <div className="flex-1 overflow-y-auto min-h-0 mb-4 pr-1">
         <AnimatePresence>
           {sortedPlayers.map((player, index) => (
             <motion.div
@@ -81,27 +64,26 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.1 }}
-              className={`player-item ${
+              className={`player-item relative w-full overflow-hidden ${
                 player.userId === currentDrawer?.userId ? 'current-drawer' : ''
               } ${
                 player.userId === currentUser?.userId ? 'ring-2 ring-white/30' : ''
               }`}
             >
-              <div className="flex items-center gap-3 flex-1">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
                 {/* Player Icon */}
                 <div className="text-xl">
                   {getPlayerIcon(player)}
                 </div>
 
                 {/* Player Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-white truncate">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-semibold text-white truncate max-w-[80px]">
                       {player.userId === currentUser?.userId ? 'You' : player.name}
                     </span>
-                    
                     {/* Player Status Badge */}
-                    <span className="text-xs px-2 py-1 bg-white/20 rounded-full text-white/80">
+                    <span className="text-xs px-2 py-1 bg-white/20 rounded-full text-white/80 truncate max-w-[60px]">
                       {getPlayerStatus(player)}
                     </span>
                   </div>
@@ -120,14 +102,7 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
                 </div>
               </div>
 
-              {/* Drawing Indicator */}
-              {player.userId === currentDrawer?.userId && (
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full"
-                />
-              )}
+              {/* Drawing Indicator removed as requested */}
             </motion.div>
           ))}
         </AnimatePresence>

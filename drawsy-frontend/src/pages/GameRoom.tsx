@@ -688,8 +688,15 @@ const GameRoom: React.FC = () => {
             <DrawingCanvas
               disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
             />
+            {/* Word to guess display for non-drawers */}
+            {gameState.status === 'playing' && gameState.wordLength && !isCurrentUserDrawer && (
+              <div className="flex flex-col items-center mt-4">
+                <span className="font-mono text-lg text-white tracking-wider">
+                  {'_ '.repeat(gameState.wordLength).trim()}
+                </span>
+              </div>
+            )}
           </div>
-          
           {/* Guess Panel - Only shown for non-drawers */}
           {!isCurrentUserDrawer && (
             <div className="h-[100px] flex-shrink-0">
