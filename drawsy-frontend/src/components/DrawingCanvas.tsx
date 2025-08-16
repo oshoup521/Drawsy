@@ -32,6 +32,40 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const currentDrawer = useCurrentDrawer();
   const isCurrentUserDrawer = currentUser?.userId === currentDrawer?.userId;
 
+  // Draw on canvas
+  const drawOnCanvas = useCallback((data: DrawingData) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.strokeStyle = data.color;
+    ctx.lineWidth = data.lineWidth;
+
+    if (data.isDrawing === false) {
+      // Start new stroke
+      ctx.beginPath();
+      ctx.moveTo(data.x, data.y);
+    } else {
+      // Continue stroke
+      ctx.lineTo(data.x, data.y);
+      ctx.stroke();
+    }
+  }, []);
+
+  // Clear canvas
+  const clearCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, width, height);
+  }, [width, height]);
+
   // Initialize canvas
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -57,36 +91,34 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       addDrawingData(data);
     };
 
+    const handleClearCanvas = () => {
+      clearCanvas();
+    };
+
+    const handleDrawingDataLoaded = (drawingDataArray: DrawingData[]) => {
+      // Clear canvas first
+      clearCanvas();
+
+      // Redraw all the saved drawing data
+      drawingDataArray.forEach(data => {
+        drawOnCanvas(data);
+        addDrawingData(data);
+      });
+    };
+
     socketService.onDrawingData(handleDrawingData);
+    socketService.onClearCanvas(handleClearCanvas);
+    socketService.onDrawingDataLoaded(handleDrawingDataLoaded);
+
+    // Load existing drawing data when component mounts
+    socketService.loadDrawingData();
 
     return () => {
       // Don't remove all listeners - just this specific one would be better
       // socketService.removeAllListeners(); 
       // For now, we'll let the parent component handle cleanup
     };
-  }, [addDrawingData]);
-
-  // Draw on canvas
-  const drawOnCanvas = useCallback((data: DrawingData) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.strokeStyle = data.color;
-    ctx.lineWidth = data.lineWidth;
-
-    if (data.isDrawing === false) {
-      // Start new stroke
-      ctx.beginPath();
-      ctx.moveTo(data.x, data.y);
-    } else {
-      // Continue stroke
-      ctx.lineTo(data.x, data.y);
-      ctx.stroke();
-    }
-  }, []);
+  }, [addDrawingData, clearCanvas, drawOnCanvas]);
 
   // Get mouse/touch position relative to canvas
   const getEventPosition = useCallback((event: React.MouseEvent | React.TouchEvent) => {
@@ -170,17 +202,11 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     setLastPoint(null);
   }, []);
 
-  // Clear canvas
-  const clearCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
-  }, [width, height]);
+  // Clear canvas and broadcast to all players
+  const handleClearCanvas = useCallback(() => {
+    clearCanvas();
+    socketService.sendClearCanvas();
+  }, [clearCanvas]);
 
   return (
     <div className="h-full flex flex-col">
@@ -235,10 +261,10 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5 }}
-            onClick={clearCanvas}
+            onClick={handleClearCanvas}
             className="absolute top-3 right-3 w-8 h-8 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-sm transition-all hover:scale-110 z-10 backdrop-blur-sm border border-white/20 shadow-lg"
             disabled={disabled}
-            title="Clear canvas"
+            title="Clear canvas for all players"
           >
             🗑️
           </motion.button>

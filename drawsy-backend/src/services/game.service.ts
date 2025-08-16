@@ -5,8 +5,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { Game, GameStatus } from '../entities/game.entity';
 import { Player } from '../entities/player.entity';
 import { Round } from '../entities/round.entity';
+import { DrawingData } from '../entities/drawing-data.entity';
 import { CreateGameDto } from '../dto/create-game.dto';
 import { JoinGameDto } from '../dto/join-game.dto';
+import { DrawingDataDto } from '../dto/drawing-data.dto';
 import { LLMService } from './llm.service';
 
 @Injectable()
@@ -18,6 +20,8 @@ export class GameService {
     private playerRepository: Repository<Player>,
     @InjectRepository(Round)
     private roundRepository: Repository<Round>,
+    @InjectRepository(DrawingData)
+    private drawingDataRepository: Repository<DrawingData>,
     private llmService: LLMService,
   ) {}
 
@@ -111,6 +115,7 @@ export class GameService {
         isActive: player.isActive,
       })),
       currentRound: game.currentRound,
+      currentDrawerUserId: game.currentDrawerUserId,
       status: game.status,
     };
   }
@@ -556,6 +561,83 @@ export class GameService {
       newHost: null,
       remainingPlayerCount: remainingPlayers.length,
     };
+  }
+
+  async saveDrawingData(roomId: string, drawingDataDto: DrawingDataDto) {
+    const game = await this.gameRepository.findOne({
+      where: { roomId },
+      relations: ['rounds'],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    // Get the current round
+    const currentRound = game.rounds?.find(r => r.roundNumber === game.currentRound);
+    if (!currentRound) {
+      throw new NotFoundException('Current round not found');
+    }
+
+    const drawingData = this.drawingDataRepository.create({
+      x: drawingDataDto.x,
+      y: drawingDataDto.y,
+      color: drawingDataDto.color,
+      lineWidth: drawingDataDto.lineWidth,
+      strokeId: drawingDataDto.strokeId,
+      isDrawing: drawingDataDto.isDrawing,
+      roundId: currentRound.id,
+    });
+
+    return await this.drawingDataRepository.save(drawingData);
+  }
+
+  async getDrawingData(roomId: string) {
+    const game = await this.gameRepository.findOne({
+      where: { roomId },
+      relations: ['rounds', 'rounds.drawingData'],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    // Get drawing data for the current round
+    const currentRound = game.rounds?.find(r => r.roundNumber === game.currentRound);
+    if (!currentRound) {
+      return [];
+    }
+
+    return currentRound.drawingData
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()) // Sort by creation time
+      .map(data => ({
+        x: data.x,
+        y: data.y,
+        color: data.color,
+        lineWidth: data.lineWidth,
+        strokeId: data.strokeId,
+        isDrawing: data.isDrawing,
+      }));
+  }
+
+  async clearDrawingData(roomId: string) {
+    const game = await this.gameRepository.findOne({
+      where: { roomId },
+      relations: ['rounds'],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    // Get the current round
+    const currentRound = game.rounds?.find(r => r.roundNumber === game.currentRound);
+    if (!currentRound) {
+      throw new NotFoundException('Current round not found');
+    }
+
+    // Delete all drawing data for the current round
+    await this.drawingDataRepository.delete({ roundId: currentRound.id });
   }
 
   private generateRoomId(): string {

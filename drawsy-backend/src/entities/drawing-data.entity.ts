@@ -29,6 +29,9 @@ export class DrawingData {
   strokeId: string;
 
   @Column()
+  isDrawing: boolean;
+
+  @Column()
   roundId: string;
 
   @ManyToOne(() => Round, (round) => round.drawingData, { onDelete: 'CASCADE' })

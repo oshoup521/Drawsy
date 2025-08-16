@@ -202,8 +202,62 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const clientInfo = this.connectedClients.get(client.id);
     if (!clientInfo) return;
 
-    // Broadcast drawing data to all other players in the room
-    client.to(clientInfo.roomId).emit('drawing_data', drawingData);
+    try {
+      // Verify that the user is the current drawer
+      const gameState = await this.gameService.getGameState(clientInfo.roomId);
+      const currentDrawer = gameState.players.find(p => p.userId === gameState.currentDrawerUserId);
+      
+      if (!currentDrawer || currentDrawer.userId !== clientInfo.userId) {
+        this.logger.warn(`Non-drawer ${clientInfo.userId} attempted to draw in room ${clientInfo.roomId}`);
+        return;
+      }
+
+      // Save drawing data to database
+      await this.gameService.saveDrawingData(clientInfo.roomId, drawingData);
+      
+      // Broadcast drawing data to all other players in the room
+      client.to(clientInfo.roomId).emit('drawing_data', drawingData);
+    } catch (error) {
+      this.logger.error('Error saving drawing data:', error);
+      // Still broadcast even if save fails to maintain real-time experience
+      client.to(clientInfo.roomId).emit('drawing_data', drawingData);
+    }
+  }
+
+  @SubscribeMessage('clear_canvas')
+  async handleClearCanvas(@ConnectedSocket() client: Socket) {
+    const clientInfo = this.connectedClients.get(client.id);
+    if (!clientInfo) return;
+
+    this.logger.log(`Clear canvas request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
+
+    try {
+      // Clear drawing data from database
+      await this.gameService.clearDrawingData(clientInfo.roomId);
+      
+      // Broadcast clear canvas event to all other players in the room
+      client.to(clientInfo.roomId).emit('clear_canvas');
+    } catch (error) {
+      this.logger.error('Error clearing drawing data:', error);
+      // Still broadcast even if database clear fails
+      client.to(clientInfo.roomId).emit('clear_canvas');
+    }
+  }
+
+  @SubscribeMessage('load_drawing_data')
+  async handleLoadDrawingData(@ConnectedSocket() client: Socket) {
+    const clientInfo = this.connectedClients.get(client.id);
+    if (!clientInfo) return;
+
+    try {
+      const drawingData = await this.gameService.getDrawingData(clientInfo.roomId);
+      
+      // Send drawing data only to the requesting client
+      client.emit('drawing_data_loaded', drawingData);
+    } catch (error) {
+      this.logger.error('Error loading drawing data:', error);
+      client.emit('drawing_data_loaded', []);
+    }
   }
 
   @SubscribeMessage('guess_word')

@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import { SocketEvents } from '../types/game';
+import { SocketEvents, DrawingData } from '../types/game';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000';
 
@@ -132,6 +132,14 @@ class SocketService {
     this.emit('chat_message', data);
   }
 
+  sendClearCanvas() {
+    this.emit('clear_canvas');
+  }
+
+  loadDrawingData() {
+    this.emit('load_drawing_data');
+  }
+
   endRound() {
     this.emit('end_round_request');
   }
@@ -177,6 +185,14 @@ class SocketService {
 
   onChatMessage(callback: (data: Parameters<SocketEvents['chat_message_broadcast']>[0]) => void) {
     this.on('chat_message', callback);
+  }
+
+  onClearCanvas(callback: () => void) {
+    this.on('clear_canvas', callback);
+  }
+
+  onDrawingDataLoaded(callback: (data: DrawingData[]) => void) {
+    this.on('drawing_data_loaded', callback);
   }
 
   onRoundEnd(callback: (data: Parameters<SocketEvents['end_round']>[0]) => void) {

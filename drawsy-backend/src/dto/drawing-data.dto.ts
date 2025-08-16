@@ -21,4 +21,7 @@ export class DrawingDataDto {
   @ApiProperty({ description: 'Stroke ID for grouping', required: false })
   @IsString()
   strokeId?: string;
+
+  @ApiProperty({ description: 'Whether this is a drawing stroke or start of new stroke' })
+  isDrawing: boolean;
 }
