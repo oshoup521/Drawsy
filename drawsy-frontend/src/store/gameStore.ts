@@ -16,6 +16,8 @@ interface GameStore {
   isDrawing: boolean;
   currentWord: string | null;
   
+
+  
   // Chat
   chatMessages: ChatMessage[];
   currentRoomId: string | null; // Track current room for chat persistence
@@ -38,6 +40,8 @@ interface GameStore {
   setDrawing: (drawing: boolean) => void;
   setCurrentWord: (word: string | null) => void;
   setCurrentRoomId: (roomId: string | null) => void;
+  
+
   
   // Chat Actions
   addChatMessage: (message: ChatMessage) => void;

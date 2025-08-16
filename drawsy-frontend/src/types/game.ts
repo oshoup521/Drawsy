@@ -79,6 +79,8 @@ export interface GuessResult {
 export interface SocketEvents {
   // Client to Server
   start_game: () => void;
+  select_topic: (data: { topic: string }) => void;
+  select_word: (data: { word: string; topic: string }) => void;
   drawing_data: (data: DrawingData) => void;
   guess_word: (data: GuessWordData) => void;
   chat_message: (data: { userId: string; message: string }) => void;
@@ -87,6 +89,30 @@ export interface SocketEvents {
   // Server to Client
   player_joined: (data: { userId: string; name: string }) => void;
   player_left: (data: { userId: string }) => void;
+  game_started: (data: {
+    currentRound: number;
+    drawerUserId: string;
+    drawerName: string;
+    totalPlayers: number;
+  }) => void;
+  request_topic_selection: (data: {
+    drawerUserId: string;
+    roundNumber: number;
+  }) => void;
+  topic_words: (data: {
+    topic: string;
+    aiWords: string[];
+    fallbackWords: string[];
+    drawerUserId: string;
+  }) => void;
+  round_started: (data: {
+    roundNumber: number;
+    drawerUserId: string;
+    topic: string;
+    wordLength: number;
+    guessTime: number;
+  }) => void;
+  drawer_word: (data: { word: string; topic: string }) => void;
   start_game_response: (data: {
     currentRound: number;
     drawerUserId: string;

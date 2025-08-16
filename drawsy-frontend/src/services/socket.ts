@@ -116,7 +116,25 @@ class SocketService {
 
   // Event emitters
   startGame() {
+    console.log('📤 Socket: Emitting start_game event', { connected: this.isConnected(), socketId: this.getSocketId() });
+    if (!this.isConnected()) {
+      console.error('❌ Socket not connected, cannot start game');
+      return;
+    }
     this.emit('start_game');
+  }
+
+  selectTopic(topic: string) {
+    this.emit('select_topic', { topic });
+  }
+
+  selectWord(word: string, topic: string) {
+    console.log('📤 Socket: Emitting select_word event', { word, topic, connected: this.isConnected() });
+    if (!this.isConnected()) {
+      console.error('❌ Socket not connected, cannot select word');
+      return;
+    }
+    this.emit('select_word', { word, topic });
   }
 
   sendDrawingData(data: Parameters<SocketEvents['drawing_data']>[0]) {
@@ -159,6 +177,30 @@ class SocketService {
 
   onGameStart(callback: (data: Parameters<SocketEvents['start_game_response']>[0]) => void) {
     this.on('start_game', (data) => {
+      callback(data);
+    });
+  }
+
+  onGameStarted(callback: (data: any) => void) {
+    console.log('👂 Socket: Listening for game_started event');
+    this.on('game_started', (data) => {
+      console.log('📥 Socket: Received game_started event:', data);
+      callback(data);
+    });
+  }
+
+  onRequestTopicSelection(callback: (data: any) => void) {
+    this.on('request_topic_selection', callback);
+  }
+
+  onTopicWords(callback: (data: any) => void) {
+    this.on('topic_words', callback);
+  }
+
+  onRoundStarted(callback: (data: any) => void) {
+    console.log('👂 Socket: Listening for round_started event');
+    this.on('round_started', (data) => {
+      console.log('📥 Socket: Received round_started event:', data);
       callback(data);
     });
   }
@@ -209,10 +251,12 @@ class SocketService {
 
   // Generic event handlers
   private emit(event: string, data?: any) {
+    console.log('📤 Attempting to emit event:', event, { connected: this.socket?.connected, data });
     if (this.socket?.connected) {
       this.socket.emit(event, data);
+      console.log('✅ Event emitted successfully:', event);
     } else {
-      console.warn('⚠️ Socket not connected, cannot emit:', event);
+      console.warn('⚠️ Socket not connected, cannot emit:', event, { socket: !!this.socket, connected: this.socket?.connected });
     }
   }
 

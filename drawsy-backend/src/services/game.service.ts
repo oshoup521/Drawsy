@@ -181,37 +181,91 @@ export class GameService {
       throw new BadRequestException('Need at least 2 players to start');
     }
 
-    // Select first drawer (host)
-    const firstDrawer = game.players.find(p => p.isHost) || game.players[0];
-    
-    // Generate word for first round
-    const wordSuggestion = await this.llmService.generateWordSuggestion();
+    // Select random drawer from active players
+    const activePlayers = game.players.filter(p => p.isActive === true);
+    if (activePlayers.length === 0) {
+      throw new BadRequestException('No active players found');
+    }
+    const randomIndex = Math.floor(Math.random() * activePlayers.length);
+    const firstDrawer = activePlayers[randomIndex];
     
     game.status = GameStatus.PLAYING;
-    game.currentRound = 1; // Start with round 1
+    game.currentRound = 1;
     game.currentDrawerUserId = firstDrawer.userId;
-    game.currentWord = wordSuggestion.word;
-    game.wordLength = wordSuggestion.word.length;
+    // Don't set word yet - drawer will select topic first
 
     await this.gameRepository.save(game);
 
-    // Create first round
+    return {
+      currentRound: game.currentRound,
+      drawerUserId: game.currentDrawerUserId,
+      drawerName: firstDrawer.name,
+      totalPlayers: activePlayers.length,
+    };
+  }
+
+  async selectTopicAndGetWords(roomId: string, topic: string) {
+    const game = await this.gameRepository.findOne({
+      where: { roomId },
+      relations: ['players'],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    if (game.status !== GameStatus.PLAYING) {
+      throw new BadRequestException('Game is not in playing state');
+    }
+
+    // Get words for the selected topic
+    const wordsData = await this.llmService.generateWordsByTopic(topic);
+
+    return {
+      topic,
+      aiWords: wordsData.aiWords,
+      fallbackWords: wordsData.fallbackWords,
+      drawerUserId: game.currentDrawerUserId,
+    };
+  }
+
+  async selectWordAndStartRound(roomId: string, word: string, topic: string) {
+    const game = await this.gameRepository.findOne({
+      where: { roomId },
+      relations: ['players'],
+    });
+
+    if (!game) {
+      throw new NotFoundException('Game not found');
+    }
+
+    if (game.status !== GameStatus.PLAYING) {
+      throw new BadRequestException('Game is not in playing state');
+    }
+
+    // Update game with selected word
+    game.currentWord = word;
+    game.wordLength = word.length;
+    await this.gameRepository.save(game);
+
+    // Create round record
     const round = this.roundRepository.create({
-      roundNumber: 1,
-      drawerUserId: firstDrawer.userId,
-      word: wordSuggestion.word,
-      topic: wordSuggestion.topic,
+      roundNumber: game.currentRound,
+      drawerUserId: game.currentDrawerUserId,
+      word: word,
+      topic: topic,
       gameId: game.id,
     });
 
     await this.roundRepository.save(round);
 
     return {
-      currentRound: game.currentRound,
+      roundNumber: game.currentRound,
       drawerUserId: game.currentDrawerUserId,
-      wordLength: game.wordLength,
-      topic: wordSuggestion.topic,
-      currentWord: game.currentWord,
+      word: word,
+      topic: topic,
+      wordLength: word.length,
+      guessTime: game.guessTime,
     };
   }
 

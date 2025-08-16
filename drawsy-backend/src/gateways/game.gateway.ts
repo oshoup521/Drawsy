@@ -13,6 +13,8 @@ import { GameService } from '../services/game.service';
 import { LLMService } from '../services/llm.service';
 import { DrawingDataDto } from '../dto/drawing-data.dto';
 import { GuessWordDto } from '../dto/guess-word.dto';
+import { SelectTopicDto } from '../dto/select-topic.dto';
+import { SelectWordDto } from '../dto/select-word.dto';
 
 interface ConnectedClient {
   socket: Socket;
@@ -158,38 +160,97 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleStartGame(@ConnectedSocket() client: Socket) {
     try {
       const clientInfo = this.connectedClients.get(client.id);
-      if (!clientInfo) return;
+      if (!clientInfo) {
+        this.logger.error('No client info found for start_game request');
+        return;
+      }
 
+      this.logger.log(`Start game request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
       const gameData = await this.gameService.startGame(clientInfo.roomId);
+      this.logger.log('Game started successfully:', gameData);
       
-      // Get the current game state to find the drawer
-      const gameState = await this.gameService.getGameState(clientInfo.roomId);
+      // Broadcast game start to all players
+      this.logger.log(`Broadcasting game_started to room ${clientInfo.roomId}:`, gameData);
+      this.server.to(clientInfo.roomId).emit('game_started', gameData);
       
-      // Broadcast game start to all players (without the word)
-      this.server.to(clientInfo.roomId).emit('start_game', {
-        ...gameData,
-        currentWord: undefined, // Don't send word to everyone
-      });
-      
-      // Send the word only to the drawer
+      // Send topic selection request to the drawer
       const drawerConnection = Array.from(this.connectedClients.values())
         .find(conn => conn.userId === gameData.drawerUserId && conn.roomId === clientInfo.roomId);
       
       if (drawerConnection) {
-        drawerConnection.socket.emit('drawer_word', {
-          word: gameData.currentWord,
-          topic: gameData.topic,
+        this.logger.log(`Sending topic selection request to drawer ${gameData.drawerUserId}`);
+        drawerConnection.socket.emit('request_topic_selection', {
+          drawerUserId: gameData.drawerUserId,
+          roundNumber: gameData.currentRound,
         });
+      } else {
+        this.logger.warn(`Drawer connection not found for user ${gameData.drawerUserId}`);
       }
-      
-      // Send AI suggestion for the topic
-      this.server.to(clientInfo.roomId).emit('ai_suggestion', {
-        topic: gameData.topic,
-        word: '***hidden***', // Don't reveal the actual word
-      });
       
     } catch (error) {
       this.logger.error('Start game error:', error);
+      client.emit('error', { message: error.message });
+    }
+  }
+
+  @SubscribeMessage('select_topic')
+  async handleSelectTopic(
+    @MessageBody() data: SelectTopicDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const clientInfo = this.connectedClients.get(client.id);
+      if (!clientInfo) return;
+
+      const wordsData = await this.gameService.selectTopicAndGetWords(clientInfo.roomId, data.topic);
+      
+      // Send words to the drawer for selection
+      client.emit('topic_words', wordsData);
+      
+    } catch (error) {
+      this.logger.error('Select topic error:', error);
+      client.emit('error', { message: error.message });
+    }
+  }
+
+  @SubscribeMessage('select_word')
+  async handleSelectWord(
+    @MessageBody() data: SelectWordDto,
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const clientInfo = this.connectedClients.get(client.id);
+      if (!clientInfo) {
+        this.logger.error('No client info found for select_word request');
+        return;
+      }
+
+      this.logger.log(`Word selection from ${clientInfo.userId} in room ${clientInfo.roomId}:`, data);
+      const roundData = await this.gameService.selectWordAndStartRound(
+        clientInfo.roomId,
+        data.word,
+        data.topic
+      );
+      this.logger.log('Round data prepared:', roundData);
+      
+      // Broadcast round start to all players (without the word)
+      const broadcastData = {
+        ...roundData,
+        word: undefined, // Don't send word to everyone
+      };
+      this.logger.log(`Broadcasting round_started to room ${clientInfo.roomId}:`, broadcastData);
+      this.server.to(clientInfo.roomId).emit('round_started', broadcastData);
+      
+      // Send the word only to the drawer
+      const drawerWordData = {
+        word: roundData.word,
+        topic: roundData.topic,
+      };
+      this.logger.log(`Sending drawer_word to drawer:`, drawerWordData);
+      client.emit('drawer_word', drawerWordData);
+      
+    } catch (error) {
+      this.logger.error('Select word error:', error);
       client.emit('error', { message: error.message });
     }
   }
