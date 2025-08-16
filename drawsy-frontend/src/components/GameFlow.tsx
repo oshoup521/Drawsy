@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore, useIsCurrentUserDrawer } from '../store/gameStore';
+import { useGameStore, useIsCurrentUserDrawer, useCurrentUser } from '../store/gameStore';
 import socketService from '../services/socket';
 import TopicSelectionModal from './TopicSelectionModal';
 import WordSelectionModal from './WordSelectionModal';
@@ -13,6 +13,7 @@ interface GameFlowProps {
 
 const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActive }) => {
   const { gameState, setCurrentWord, updateGameState } = useGameStore();
+  const currentUser = useCurrentUser();
   const isCurrentUserDrawer = useIsCurrentUserDrawer();
 
   // Modal states
@@ -59,6 +60,7 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
         currentRound: data.roundNumber,
         wordLength: data.wordLength,
         topic: data.topic,
+        currentDrawerUserId: data.drawerUserId, // Update current drawer
       } : null);
       
       console.log('✅ Round started - timer activated, word modal closed');
@@ -69,8 +71,26 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
       setCurrentWord(data.word);
     };
 
+    const handleNextRoundStart = (data: any) => {
+      console.log('🎮 Next round starting after timer end:', data);
+      // This handles when a new round starts automatically after the previous round ended
+      updateGameState((prev) => prev ? {
+        ...prev,
+        currentRound: data.currentRound,
+        currentDrawerUserId: data.drawerUserId,
+        status: 'playing',
+        currentWord: undefined,
+        wordLength: undefined,
+        topic: undefined,
+      } : null);
+      
+      // Clear any existing word
+      setCurrentWord(null);
+    };
+
     // Register event listeners
     socketService.onGameStarted(handleGameStarted);
+    socketService.onGameStarted(handleNextRoundStart); // Also handle next round starts
     socketService.onRequestTopicSelection(handleRequestTopicSelection);
     socketService.onTopicWords(handleTopicWords);
     socketService.onRoundStarted(handleRoundStarted);

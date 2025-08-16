@@ -10,6 +10,7 @@ import GuessPanel from '../components/GuessPanel';
 import VerticalColorPalette from '../components/VerticalColorPalette';
 import GameFlow from '../components/GameFlow';
 import CompactTimer from '../components/CompactTimer';
+import WinnerPodium from '../components/WinnerPodium';
 import { useGameStore, useIsCurrentUserDrawer } from '../store/gameStore';
 import { gameApi } from '../services/api';
 import socketService from '../services/socket';
@@ -21,6 +22,7 @@ const GameRoom: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [showScores, setShowScores] = useState(false);
+  const [showWinnerPodium, setShowWinnerPodium] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   
   const {
@@ -286,6 +288,69 @@ const GameRoom: React.FC = () => {
       console.log('✅ Round started - timer activated');
     };
 
+    // Round ended event
+    const handleRoundEnded = (data: any) => {
+      console.log('🏁 Round ended event received:', data);
+      setTimerActive(false);
+      
+      // Show the correct word and scores briefly
+      addChatMessage({
+        userId: 'system',
+        message: `⏰ Time's up! The word was "${data.correctWord}"`,
+        isAI: true,
+        timestamp: Date.now(),
+      });
+
+      // Update scores if provided
+      if (data.scores) {
+        data.scores.forEach((playerScore: any) => {
+          updatePlayer({
+            userId: playerScore.userId,
+            name: playerScore.name,
+            score: playerScore.score,
+          });
+        });
+      }
+    };
+
+    // Game over event
+    const handleGameOver = (data: any) => {
+      console.log('🎯 Game over event received:', data);
+      setTimerActive(false);
+      
+      // Update final scores
+      if (data.finalScores) {
+        data.finalScores.forEach((playerScore: any) => {
+          updatePlayer({
+            userId: playerScore.userId,
+            name: playerScore.name,
+            score: playerScore.score,
+          });
+        });
+      }
+
+      // Update game state to finished
+      updateGameState((prev) => prev ? {
+        ...prev,
+        status: 'finished'
+      } : null);
+
+      // Show winner announcement
+      addChatMessage({
+        userId: 'system',
+        message: `🎉 Game Over! ${data.winner.name} wins with ${data.winner.score} points!`,
+        isAI: true,
+        timestamp: Date.now(),
+      });
+
+      // Show winner podium after a brief delay
+      setTimeout(() => {
+        setShowWinnerPodium(true);
+      }, 1000);
+
+      toast.success(`🏆 ${data.winner.name} wins the game!`);
+    };
+
     // Set up the event listeners
     console.log('🔧 Setting up socket event listeners...');
     socketService.onPlayerJoined(handlePlayerJoined);
@@ -295,6 +360,8 @@ const GameRoom: React.FC = () => {
     socketService.onChatMessage(handleChatMessage);
     socketService.onCorrectGuess(handleCorrectGuess);
     socketService.onRoundStarted(handleRoundStarted);
+    socketService.onRoundEnded(handleRoundEnded);
+    socketService.onGameOver(handleGameOver);
     console.log('✅ Socket event listeners set up');
 
     // Cleanup function - this useEffect will run whenever isConnected changes
@@ -342,8 +409,19 @@ const GameRoom: React.FC = () => {
   // Timer handlers
   const handleTimeUp = () => {
     setTimerActive(false);
-    console.log('Time is up!');
-    // Handle round end logic here
+    console.log('⏰ Time is up! Ending round...');
+    
+    // Send end round request to server
+    if (roomId && gameState?.status === 'playing') {
+      socketService.endRound();
+      
+      addChatMessage({
+        userId: 'system',
+        message: '⏰ Time\'s up! Round ending...',
+        isAI: true,
+        timestamp: Date.now(),
+      });
+    }
   };
 
   const handleTimerTick = (remainingTime: number) => {
@@ -723,6 +801,13 @@ const GameRoom: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Winner Podium */}
+      <WinnerPodium
+        isOpen={showWinnerPodium}
+        players={gameState?.players || []}
+        onClose={() => setShowWinnerPodium(false)}
+      />
       </div>
     </GameFlow>
   );

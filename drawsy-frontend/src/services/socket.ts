@@ -159,7 +159,8 @@ class SocketService {
   }
 
   endRound() {
-    this.emit('end_round_request');
+    console.log('📤 Socket: Emitting end_round event');
+    this.emit('end_round');
   }
 
   // Event listeners
@@ -237,7 +238,7 @@ class SocketService {
     this.on('drawing_data_loaded', callback);
   }
 
-  onRoundEnd(callback: (data: Parameters<SocketEvents['end_round']>[0]) => void) {
+  onRoundEnded(callback: (data: any) => void) {
     this.on('end_round', callback);
   }
 

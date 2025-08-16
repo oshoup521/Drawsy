@@ -116,6 +116,8 @@ export class GameService {
       })),
       currentRound: game.currentRound,
       currentDrawerUserId: game.currentDrawerUserId,
+      currentWord: game.currentWord,
+      wordLength: game.wordLength,
       status: game.status,
     };
   }
@@ -335,8 +337,11 @@ export class GameService {
     const nextDrawerIndex = (currentDrawerIndex + 1) % activePlayers.length;
     const nextDrawer = activePlayers[nextDrawerIndex];
 
-    // Update game with new drawer
+    // Increment round and update game with new drawer
+    game.currentRound += 1;
     game.currentDrawerUserId = nextDrawer.userId;
+    game.currentWord = null; // Clear previous word
+    game.wordLength = null; // Clear previous word length
     await this.gameRepository.save(game);
 
     return {

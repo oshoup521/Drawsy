@@ -28,8 +28,8 @@ interface ConnectedClient {
     credentials: true,
     methods: ['GET', 'POST'],
     allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
+      'Content-Type',
+      'Authorization',
       'X-Requested-With',
       'ngrok-skip-browser-warning',
       'Accept',
@@ -47,7 +47,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private gameService: GameService,
     private llmService: LLMService,
-  ) {}
+  ) { }
 
   async handleConnection(client: Socket) {
     try {
@@ -61,7 +61,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Join the room
       client.join(roomId);
-      
+
       this.connectedClients.set(client.id, {
         socket: client,
         roomId,
@@ -71,7 +71,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Get player details from database to show correct name
       try {
         const player = await this.gameService.getPlayer(roomId, userId);
-        
+
         // Notify others that a player joined with their actual name
         client.to(roomId).emit('player_joined', {
           userId,
@@ -81,7 +81,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         this.logger.log(`Player ${player.name} (${client.id}) connected to room ${roomId}`);
       } catch (error) {
         this.logger.warn(`Could not get player details for ${userId}: ${error.message}`);
-        
+
         // Fallback to generic name if player not found in DB
         client.to(roomId).emit('player_joined', {
           userId,
@@ -101,18 +101,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (clientInfo) {
       this.connectedClients.delete(client.id);
       this.logger.log(`Client ${client.id} disconnected from room ${clientInfo.roomId}`);
-      
+
       // Only emit player_left after a delay to avoid spam from reconnections
       setTimeout(async () => {
         // Check if the user has any other active connections
         const hasOtherConnections = Array.from(this.connectedClients.values())
           .some(conn => conn.userId === clientInfo.userId && conn.roomId === clientInfo.roomId);
-        
+
         if (!hasOtherConnections) {
           // User has no other connections, they actually left
           try {
             const removeResult = await this.gameService.removePlayer(clientInfo.roomId, clientInfo.userId);
-            
+
             if (removeResult) {
               // Emit basic player_left event
               client.to(clientInfo.roomId).emit('player_left', {
@@ -168,15 +168,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`Start game request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
       const gameData = await this.gameService.startGame(clientInfo.roomId);
       this.logger.log('Game started successfully:', gameData);
-      
+
       // Broadcast game start to all players
       this.logger.log(`Broadcasting game_started to room ${clientInfo.roomId}:`, gameData);
       this.server.to(clientInfo.roomId).emit('game_started', gameData);
-      
+
       // Send topic selection request to the drawer
       const drawerConnection = Array.from(this.connectedClients.values())
         .find(conn => conn.userId === gameData.drawerUserId && conn.roomId === clientInfo.roomId);
-      
+
       if (drawerConnection) {
         this.logger.log(`Sending topic selection request to drawer ${gameData.drawerUserId}`);
         drawerConnection.socket.emit('request_topic_selection', {
@@ -186,7 +186,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       } else {
         this.logger.warn(`Drawer connection not found for user ${gameData.drawerUserId}`);
       }
-      
+
     } catch (error) {
       this.logger.error('Start game error:', error);
       client.emit('error', { message: error.message });
@@ -203,10 +203,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!clientInfo) return;
 
       const wordsData = await this.gameService.selectTopicAndGetWords(clientInfo.roomId, data.topic);
-      
+
       // Send words to the drawer for selection
       client.emit('topic_words', wordsData);
-      
+
     } catch (error) {
       this.logger.error('Select topic error:', error);
       client.emit('error', { message: error.message });
@@ -232,7 +232,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data.topic
       );
       this.logger.log('Round data prepared:', roundData);
-      
+
       // Broadcast round start to all players (without the word)
       const broadcastData = {
         ...roundData,
@@ -240,7 +240,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
       this.logger.log(`Broadcasting round_started to room ${clientInfo.roomId}:`, broadcastData);
       this.server.to(clientInfo.roomId).emit('round_started', broadcastData);
-      
+
       // Send the word only to the drawer
       const drawerWordData = {
         word: roundData.word,
@@ -248,7 +248,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
       this.logger.log(`Sending drawer_word to drawer:`, drawerWordData);
       client.emit('drawer_word', drawerWordData);
-      
+
     } catch (error) {
       this.logger.error('Select word error:', error);
       client.emit('error', { message: error.message });
@@ -267,7 +267,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Verify that the user is the current drawer
       const gameState = await this.gameService.getGameState(clientInfo.roomId);
       const currentDrawer = gameState.players.find(p => p.userId === gameState.currentDrawerUserId);
-      
+
       if (!currentDrawer || currentDrawer.userId !== clientInfo.userId) {
         this.logger.warn(`Non-drawer ${clientInfo.userId} attempted to draw in room ${clientInfo.roomId}`);
         return;
@@ -275,7 +275,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       // Save drawing data to database
       await this.gameService.saveDrawingData(clientInfo.roomId, drawingData);
-      
+
       // Broadcast drawing data to all other players in the room
       client.to(clientInfo.roomId).emit('drawing_data', drawingData);
     } catch (error) {
@@ -295,7 +295,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       // Clear drawing data from database
       await this.gameService.clearDrawingData(clientInfo.roomId);
-      
+
       // Broadcast clear canvas event to all other players in the room
       client.to(clientInfo.roomId).emit('clear_canvas');
     } catch (error) {
@@ -312,7 +312,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       const drawingData = await this.gameService.getDrawingData(clientInfo.roomId);
-      
+
       // Send drawing data only to the requesting client
       client.emit('drawing_data_loaded', drawingData);
     } catch (error) {
@@ -403,27 +403,61 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) return;
 
+      this.logger.log(`End round request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
+
+      // Get current game state to get the correct word
+      const gameState = await this.gameService.getGameState(clientInfo.roomId);
+      const correctWord = gameState.currentWord || 'Unknown';
+
+      // End the current round
       const endRoundResult = await this.gameService.endRound(clientInfo.roomId);
-      
+
       if ('gameStatus' in endRoundResult && endRoundResult.gameStatus === 'finished') {
         // Game is over
+        this.logger.log(`Game finished in room ${clientInfo.roomId}`);
         this.server.to(clientInfo.roomId).emit('game_over', endRoundResult);
       } else {
-        // Next round started
-        this.server.to(clientInfo.roomId).emit('round_start', endRoundResult);
-        
-        // Send word to new drawer (type guard ensures this is the right type)
-        if ('drawerUserId' in endRoundResult) {
-          const drawerConnection = Array.from(this.connectedClients.values())
-            .find(conn => conn.userId === endRoundResult.drawerUserId && conn.roomId === clientInfo.roomId);
-          
-          if (drawerConnection) {
-            drawerConnection.socket.emit('drawer_word', {
-              word: endRoundResult.word,
-              topic: endRoundResult.topic,
-            });
+        // Emit round ended event first
+        this.server.to(clientInfo.roomId).emit('end_round', {
+          correctWord,
+          scores: gameState.players,
+        });
+
+        // Wait a moment then start next round
+        setTimeout(async () => {
+          try {
+            // Check if this was the last round
+            if (gameState.currentRound >= gameState.numRounds) {
+              // Game should end
+              const gameResult = await this.gameService.endGame(clientInfo.roomId);
+              this.server.to(clientInfo.roomId).emit('game_over', gameResult);
+            } else {
+              // Start next round - select next drawer and request topic selection
+              const nextDrawerResult = await this.gameService.selectNextDrawer(clientInfo.roomId);
+
+              // Notify about next round starting
+              this.server.to(clientInfo.roomId).emit('game_started', {
+                currentRound: gameState.currentRound + 1,
+                drawerUserId: nextDrawerResult.currentDrawerUserId,
+                drawerName: nextDrawerResult.drawerName,
+                totalPlayers: nextDrawerResult.totalActivePlayers,
+              });
+
+              // Send topic selection request to new drawer
+              const drawerConnection = Array.from(this.connectedClients.values())
+                .find(conn => conn.userId === nextDrawerResult.currentDrawerUserId && conn.roomId === clientInfo.roomId);
+
+              if (drawerConnection) {
+                drawerConnection.socket.emit('request_topic_selection', {
+                  drawerUserId: nextDrawerResult.currentDrawerUserId,
+                  roundNumber: gameState.currentRound + 1,
+                });
+              }
+            }
+          } catch (error) {
+            this.logger.error('Error starting next round:', error);
           }
-        }
+        }, 2000); // 2 second delay to show round end results
       }
 
     } catch (error) {
