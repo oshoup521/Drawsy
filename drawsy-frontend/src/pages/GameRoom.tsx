@@ -355,7 +355,16 @@ const GameRoom: React.FC = () => {
 
     // Cleanup function - this useEffect will run whenever isConnected changes
     return () => {
-      // Note: socketService should ideally have removeListener methods
+      // Remove all event listeners to prevent duplicates
+      socketService.removeListener('player_joined');
+      socketService.removeListener('player_left');
+      socketService.removeListener('host_changed');
+      socketService.removeListener('game_started');
+      socketService.removeListener('chat_message');
+      socketService.removeListener('correct_guess');
+      socketService.removeListener('round_started');
+      socketService.removeListener('end_round');
+      socketService.removeListener('game_over');
     };
   }, [isConnected, updatePlayer, removePlayer, updateHost, addChatMessage, setGameState, roomId, gameState?.players, updateGameState]);
 

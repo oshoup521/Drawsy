@@ -81,7 +81,6 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
 
     // Register event listeners
     socketService.onGameStarted(handleGameStarted);
-    socketService.onGameStarted(handleNextRoundStart); // Also handle next round starts
     socketService.onRequestTopicSelection(handleRequestTopicSelection);
     socketService.onTopicWords(handleTopicWords);
     socketService.onRoundStarted(handleRoundStarted);
