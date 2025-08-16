@@ -39,7 +39,6 @@ const JoinRoom: React.FC = () => {
 
       navigate(`/room/${response.roomId}`);
     } catch (error) {
-      console.error('Failed to join game:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to join game');
     } finally {
       setIsJoining(false);

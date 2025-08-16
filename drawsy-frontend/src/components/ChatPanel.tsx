@@ -42,8 +42,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
     const message = inputMessage.trim();
     
-    console.log('📤 Sending chat message:', { userId: currentUser.userId, message });
-    
     // Send message via socket
     socketService.sendChatMessage({
       userId: currentUser.userId,

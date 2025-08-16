@@ -13,7 +13,6 @@ interface GameFlowProps {
 
 const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActive }) => {
   const { gameState, setCurrentWord, updateGameState } = useGameStore();
-  const currentUser = useCurrentUser();
   const isCurrentUserDrawer = useIsCurrentUserDrawer();
 
   // Modal states
@@ -29,19 +28,16 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
   // Socket event handlers
   useEffect(() => {
     const handleGameStarted = (data: any) => {
-      console.log('Game started:', data);
       updateGameState((prev) => prev ? { ...prev, status: 'playing' } : null);
     };
 
     const handleRequestTopicSelection = (data: any) => {
-      console.log('Topic selection requested:', data);
       if (isCurrentUserDrawer) {
         setShowTopicModal(true);
       }
     };
 
     const handleTopicWords = (data: any) => {
-      console.log('Received topic words:', data);
       setSelectedTopic(data.topic);
       setAiWords(data.aiWords || []);
       setFallbackWords(data.fallbackWords || []);
@@ -51,7 +47,6 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
     };
 
     const handleRoundStarted = (data: any) => {
-      console.log('🎮 Round started event received:', data);
       setShowWordModal(false);
       setTimerActive(true);
       
@@ -62,17 +57,13 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
         topic: data.topic,
         currentDrawerUserId: data.drawerUserId, // Update current drawer
       } : null);
-      
-      console.log('✅ Round started - timer activated, word modal closed');
     };
 
     const handleDrawerWord = (data: { word: string; topic: string }) => {
-      console.log('Drawer word received:', data);
       setCurrentWord(data.word);
     };
 
     const handleNextRoundStart = (data: any) => {
-      console.log('🎮 Next round starting after timer end:', data);
       // This handles when a new round starts automatically after the previous round ended
       updateGameState((prev) => prev ? {
         ...prev,
@@ -112,14 +103,12 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
     try {
       socketService.selectTopic(topic);
     } catch (error) {
-      console.error('Error selecting topic:', error);
       setIsLoadingWords(false);
     }
   }, []);
 
   // Word selection handler
   const handleWordSelect = useCallback((word: string) => {
-    console.log('🎯 Word selected:', { word, topic: selectedTopic });
     socketService.selectWord(word, selectedTopic);
   }, [selectedTopic]);
 

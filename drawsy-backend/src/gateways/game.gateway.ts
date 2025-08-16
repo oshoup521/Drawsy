@@ -78,20 +78,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           name: player.name,
         });
 
-        this.logger.log(`Player ${player.name} (${client.id}) connected to room ${roomId}`);
       } catch (error) {
-        this.logger.warn(`Could not get player details for ${userId}: ${error.message}`);
-
         // Fallback to generic name if player not found in DB
         client.to(roomId).emit('player_joined', {
           userId,
           name: 'Player',
         });
-
-        this.logger.log(`Client ${client.id} connected to room ${roomId}`);
       }
     } catch (error) {
-      this.logger.error('Connection error:', error);
       client.disconnect();
     }
   }
@@ -100,7 +94,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const clientInfo = this.connectedClients.get(client.id);
     if (clientInfo) {
       this.connectedClients.delete(client.id);
-      this.logger.log(`Client ${client.id} disconnected from room ${clientInfo.roomId}`);
 
       // Only emit player_left after a delay to avoid spam from reconnections
       setTimeout(async () => {
@@ -131,7 +124,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     name: removeResult.newHost.name,
                   },
                 });
-                this.logger.log(`Host changed in room ${clientInfo.roomId}: ${removeResult.newHost.name} is now host`);
+
               }
 
               // If the game ended because no players left
@@ -139,13 +132,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 this.server.to(clientInfo.roomId).emit('game_ended', {
                   reason: 'all_players_left'
                 });
-                this.logger.log(`Game ended in room ${clientInfo.roomId} - no players remaining`);
+
               }
 
-              this.logger.log(`Player ${clientInfo.userId} left room ${clientInfo.roomId}`);
+
             }
           } catch (error) {
-            this.logger.error(`Error removing player ${clientInfo.userId} from room ${clientInfo.roomId}:`, error);
             // Still emit the basic player_left event as fallback
             client.to(clientInfo.roomId).emit('player_left', {
               userId: clientInfo.userId,
@@ -161,16 +153,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) {
-        this.logger.error('No client info found for start_game request');
         return;
       }
 
-      this.logger.log(`Start game request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
       const gameData = await this.gameService.startGame(clientInfo.roomId);
-      this.logger.log('Game started successfully:', gameData);
 
       // Broadcast game start to all players
-      this.logger.log(`Broadcasting game_started to room ${clientInfo.roomId}:`, gameData);
       this.server.to(clientInfo.roomId).emit('game_started', gameData);
 
       // Send topic selection request to the drawer
@@ -178,17 +166,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .find(conn => conn.userId === gameData.drawerUserId && conn.roomId === clientInfo.roomId);
 
       if (drawerConnection) {
-        this.logger.log(`Sending topic selection request to drawer ${gameData.drawerUserId}`);
         drawerConnection.socket.emit('request_topic_selection', {
           drawerUserId: gameData.drawerUserId,
           roundNumber: gameData.currentRound,
         });
-      } else {
-        this.logger.warn(`Drawer connection not found for user ${gameData.drawerUserId}`);
       }
 
     } catch (error) {
-      this.logger.error('Start game error:', error);
       client.emit('error', { message: error.message });
     }
   }
@@ -208,7 +192,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('topic_words', wordsData);
 
     } catch (error) {
-      this.logger.error('Select topic error:', error);
       client.emit('error', { message: error.message });
     }
   }
@@ -221,24 +204,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) {
-        this.logger.error('No client info found for select_word request');
         return;
       }
 
-      this.logger.log(`Word selection from ${clientInfo.userId} in room ${clientInfo.roomId}:`, data);
       const roundData = await this.gameService.selectWordAndStartRound(
         clientInfo.roomId,
         data.word,
         data.topic
       );
-      this.logger.log('Round data prepared:', roundData);
 
       // Broadcast round start to all players (without the word)
       const broadcastData = {
         ...roundData,
         word: undefined, // Don't send word to everyone
       };
-      this.logger.log(`Broadcasting round_started to room ${clientInfo.roomId}:`, broadcastData);
       this.server.to(clientInfo.roomId).emit('round_started', broadcastData);
 
       // Send the word only to the drawer
@@ -246,11 +225,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         word: roundData.word,
         topic: roundData.topic,
       };
-      this.logger.log(`Sending drawer_word to drawer:`, drawerWordData);
       client.emit('drawer_word', drawerWordData);
 
     } catch (error) {
-      this.logger.error('Select word error:', error);
       client.emit('error', { message: error.message });
     }
   }
@@ -269,7 +246,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const currentDrawer = gameState.players.find(p => p.userId === gameState.currentDrawerUserId);
 
       if (!currentDrawer || currentDrawer.userId !== clientInfo.userId) {
-        this.logger.warn(`Non-drawer ${clientInfo.userId} attempted to draw in room ${clientInfo.roomId}`);
         return;
       }
 
@@ -279,7 +255,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Broadcast drawing data to all other players in the room
       client.to(clientInfo.roomId).emit('drawing_data', drawingData);
     } catch (error) {
-      this.logger.error('Error saving drawing data:', error);
       // Still broadcast even if save fails to maintain real-time experience
       client.to(clientInfo.roomId).emit('drawing_data', drawingData);
     }
@@ -290,8 +265,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const clientInfo = this.connectedClients.get(client.id);
     if (!clientInfo) return;
 
-    this.logger.log(`Clear canvas request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
-
     try {
       // Clear drawing data from database
       await this.gameService.clearDrawingData(clientInfo.roomId);
@@ -299,7 +272,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Broadcast clear canvas event to all other players in the room
       client.to(clientInfo.roomId).emit('clear_canvas');
     } catch (error) {
-      this.logger.error('Error clearing drawing data:', error);
       // Still broadcast even if database clear fails
       client.to(clientInfo.roomId).emit('clear_canvas');
     }
@@ -316,7 +288,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Send drawing data only to the requesting client
       client.emit('drawing_data_loaded', drawingData);
     } catch (error) {
-      this.logger.error('Error loading drawing data:', error);
       client.emit('drawing_data_loaded', []);
     }
   }
@@ -352,7 +323,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
     } catch (error) {
-      this.logger.error('Guess word error:', error);
       client.emit('error', { message: error.message });
     }
   }
@@ -365,11 +335,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) {
-        this.logger.warn('Chat message from unknown client');
         return;
       }
-
-      this.logger.log(`Chat message from ${data.userId}: ${data.message}`);
 
       // Skip AI suggestion for now to test basic functionality
       let aiSuggestion = "";
@@ -378,7 +345,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
           data.message,
         );
       } catch (error) {
-        this.logger.warn('Failed to generate AI suggestion, continuing without it:', error.message);
+        // Failed to generate AI suggestion, continuing without it
       }
 
       const chatData = {
@@ -387,13 +354,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         aiSuggestion,
       };
 
-      this.logger.log(`Broadcasting chat message to room ${clientInfo.roomId}:`, chatData);
+
 
       // Broadcast chat message to all players in the room
       this.server.to(clientInfo.roomId).emit('chat_message', chatData);
 
     } catch (error) {
-      this.logger.error('Chat message error:', error);
+      // Chat message error occurred
     }
   }
 
@@ -402,8 +369,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) return;
-
-      this.logger.log(`End round request from ${clientInfo.userId} in room ${clientInfo.roomId}`);
 
       // Get current game state to get the correct word
       const gameState = await this.gameService.getGameState(clientInfo.roomId);
@@ -414,7 +379,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       if ('gameStatus' in endRoundResult && endRoundResult.gameStatus === 'finished') {
         // Game is over
-        this.logger.log(`Game finished in room ${clientInfo.roomId}`);
         this.server.to(clientInfo.roomId).emit('game_over', endRoundResult);
       } else {
         // Emit round ended event first
@@ -455,13 +419,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
               }
             }
           } catch (error) {
-            this.logger.error('Error starting next round:', error);
+            // Error starting next round
           }
         }, 2000); // 2 second delay to show round end results
       }
 
     } catch (error) {
-      this.logger.error('End round error:', error);
       client.emit('error', { message: error.message });
     }
   }
@@ -476,7 +439,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(clientInfo.roomId).emit('game_over', gameResult);
 
     } catch (error) {
-      this.logger.error('Force end game error:', error);
       client.emit('error', { message: error.message });
     }
   }

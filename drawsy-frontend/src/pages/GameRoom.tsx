@@ -90,7 +90,6 @@ const GameRoom: React.FC = () => {
           toast.success('Connected to game room!');
         }
       } catch (error) {
-        console.error('Failed to initialize room:', error);
         if (mounted) {
           toast.error(error instanceof Error ? error.message : 'Failed to connect to room');
           navigate('/');
@@ -180,15 +179,12 @@ const GameRoom: React.FC = () => {
 
     // Game events
     const handleGameStart = (data: any) => {
-      console.log('🎮 Received game_started event:', data);
-      
       // Get fresh state instead of relying on closure
       const currentState = useGameStore.getState();
       const freshGameState = currentState.gameState;
       
       // Reset the starting state since game has started
       setIsStarting(false);
-      console.log('✅ Game starting state reset');
       
       // Create new game state directly - PRESERVE existing players array
       if (freshGameState && freshGameState.players && freshGameState.players.length > 0) {
@@ -212,7 +208,7 @@ const GameRoom: React.FC = () => {
             if (roomId) {
               gameApi.getGameState(roomId).then(freshState => {
                 setGameState(freshState);
-              }).catch(console.error);
+              }).catch(() => {});
             }
           }
         }, 100);
@@ -226,7 +222,7 @@ const GameRoom: React.FC = () => {
               currentDrawerUserId: data.drawerUserId,
               currentRound: data.currentRound,
             });
-          }).catch(console.error);
+          }).catch(() => {});
         }
       }
       
@@ -275,7 +271,6 @@ const GameRoom: React.FC = () => {
 
     // Round started event - activate timer
     const handleRoundStarted = (data: any) => {
-      console.log('🎮 Round started event received:', data);
       setTimerActive(true);
       
       updateGameState((prev) => prev ? {
@@ -284,13 +279,10 @@ const GameRoom: React.FC = () => {
         wordLength: data.wordLength,
         topic: data.topic,
       } : null);
-      
-      console.log('✅ Round started - timer activated');
     };
 
     // Round ended event
     const handleRoundEnded = (data: any) => {
-      console.log('🏁 Round ended event received:', data);
       setTimerActive(false);
       
       // Show the correct word and scores briefly
@@ -315,7 +307,6 @@ const GameRoom: React.FC = () => {
 
     // Game over event
     const handleGameOver = (data: any) => {
-      console.log('🎯 Game over event received:', data);
       setTimerActive(false);
       
       // Update final scores
@@ -352,7 +343,6 @@ const GameRoom: React.FC = () => {
     };
 
     // Set up the event listeners
-    console.log('🔧 Setting up socket event listeners...');
     socketService.onPlayerJoined(handlePlayerJoined);
     socketService.onPlayerLeft(handlePlayerLeft);
     socketService.onHostChanged(handleHostChanged);
@@ -362,37 +352,29 @@ const GameRoom: React.FC = () => {
     socketService.onRoundStarted(handleRoundStarted);
     socketService.onRoundEnded(handleRoundEnded);
     socketService.onGameOver(handleGameOver);
-    console.log('✅ Socket event listeners set up');
 
     // Cleanup function - this useEffect will run whenever isConnected changes
     return () => {
       // Note: socketService should ideally have removeListener methods
     };
-  }, [isConnected, updatePlayer, removePlayer, updateHost, addChatMessage]);
+  }, [isConnected, updatePlayer, removePlayer, updateHost, addChatMessage, setGameState, roomId, gameState?.players, updateGameState]);
 
   const handleStartGame = async () => {
-    console.log('🎮 Start game clicked!', { roomId, gameState: gameState?.status, isStarting });
-    
     if (!roomId || !gameState) {
-      console.error('❌ Missing roomId or gameState', { roomId, gameState });
       return;
     }
     
     // Prevent multiple calls if already starting or game has started
     if (isStarting || gameState.status !== 'waiting') {
-      console.warn('⚠️ Cannot start game', { isStarting, status: gameState.status });
       return;
     }
 
     setIsStarting(true);
-    console.log('📤 Sending start game event via socket...');
     
     try {
       // Only use WebSocket to start game - the socket handler will update DB and broadcast to all clients
       socketService.startGame();
-      console.log('✅ Start game event sent successfully');
     } catch (error) {
-      console.error('❌ Failed to start game:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to start game');
       setIsStarting(false); // Reset loading state on error
     }
@@ -409,7 +391,6 @@ const GameRoom: React.FC = () => {
   // Timer handlers
   const handleTimeUp = () => {
     setTimerActive(false);
-    console.log('⏰ Time is up! Ending round...');
     
     // Send end round request to server
     if (roomId && gameState?.status === 'playing') {
@@ -426,9 +407,6 @@ const GameRoom: React.FC = () => {
 
   const handleTimerTick = (remainingTime: number) => {
     // Optional: Handle timer tick events
-    if (remainingTime === 10) {
-      console.log('10 seconds remaining!');
-    }
   };
 
   if (isLoading) {
@@ -510,21 +488,7 @@ const GameRoom: React.FC = () => {
                       <>🚀 Start Game</>
                     )}
                   </button>
-                  <button
-                    onClick={() => {
-                      console.log('🔍 Socket Debug Info:', {
-                        connected: socketService.isConnected(),
-                        socketId: socketService.getSocketId(),
-                        gameState: gameState?.status,
-                        isStarting,
-                        canStartGame,
-                        roomId
-                      });
-                    }}
-                    className="btn-secondary text-xs px-2"
-                  >
-                    Debug
-                  </button>
+
                 </div>
               )
             ) : (
@@ -717,17 +681,21 @@ const GameRoom: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="flex-1 h-full flex flex-col gap-3"
         >
-          {/* Drawing Canvas */}
-          <div className="glass-card p-4 h-[calc(100%-120px)] flex flex-col">
+          {/* Drawing Canvas - Full height for drawer, reduced for guessers */}
+          <div className={`glass-card p-4 flex flex-col ${
+            isCurrentUserDrawer ? 'h-full' : 'h-[calc(100%-120px)]'
+          }`}>
             <DrawingCanvas
               disabled={!isCurrentUserDrawer || gameState.status !== 'playing'}
             />
           </div>
           
-          {/* Guess Panel - Below Canvas */}
-          <div className="h-[100px] flex-shrink-0">
-            <GuessPanel />
-          </div>
+          {/* Guess Panel - Only shown for non-drawers */}
+          {!isCurrentUserDrawer && (
+            <div className="h-[100px] flex-shrink-0">
+              <GuessPanel />
+            </div>
+          )}
         </motion.div>
 
         {/* Right Sidebar - Chat */}

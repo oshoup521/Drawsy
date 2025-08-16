@@ -13,11 +13,8 @@ class SocketService {
     return new Promise((resolve, reject) => {
       try {
         if (this.socket?.connected) {
-          console.log('⚠️ Already connected, disconnecting first');
           this.disconnect();
         }
-
-        console.log(`🔌 Connecting to socket: ${SOCKET_URL}`);
         
         this.socket = io(SOCKET_URL, {
           transports: ['websocket', 'polling'],
@@ -31,19 +28,15 @@ class SocketService {
         });
 
         this.socket.on('connect', () => {
-          console.log('✅ Socket connected:', this.socket?.id);
           this.reconnectAttempts = 0;
           this.isReconnecting = false;
           resolve(this.socket!);
         });
 
         this.socket.on('disconnect', (reason) => {
-          console.log('❌ Socket disconnected:', reason);
-          
           // Only auto-reconnect for certain disconnect reasons and if not manually disconnected
           if (reason === 'io server disconnect' || reason === 'io client disconnect') {
             // Server or client initiated disconnect, don't reconnect
-            console.log('🛑 Manual disconnect, not reconnecting');
             return;
           }
           
@@ -54,12 +47,11 @@ class SocketService {
         });
 
         this.socket.on('connect_error', (error) => {
-          console.error('❌ Socket connection error:', error);
           reject(new Error(`Failed to connect: ${error.message}`));
         });
 
         this.socket.on('error', (error) => {
-          console.error('❌ Socket error:', error);
+          // Socket error occurred
         });
 
         // Set connection timeout
@@ -70,7 +62,6 @@ class SocketService {
         }, 10000);
 
       } catch (error) {
-        console.error('❌ Socket connection failed:', error);
         reject(error);
       }
     });
@@ -78,13 +69,11 @@ class SocketService {
 
   private handleReconnect(roomId: string, userId: string) {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.error('❌ Max reconnection attempts reached, stopping reconnection');
       this.isReconnecting = false;
       return;
     }
 
     if (this.isReconnecting) {
-      console.log('⚠️ Already reconnecting, skipping...');
       return;
     }
 
@@ -92,12 +81,9 @@ class SocketService {
     this.reconnectAttempts++;
     const delay = Math.min(2000 * Math.pow(2, this.reconnectAttempts), 15000); // Reduced delays
     
-    console.log(`🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-    
     setTimeout(() => {
       if (this.isReconnecting) {
-        this.connect(roomId, userId).catch((error) => {
-          console.error('Reconnection failed:', error);
+        this.connect(roomId, userId).catch(() => {
           this.isReconnecting = false;
         });
       }
@@ -106,7 +92,6 @@ class SocketService {
 
   disconnect() {
     if (this.socket) {
-      console.log('🔌 Disconnecting socket');
       this.isReconnecting = false; // Stop any reconnection attempts
       this.reconnectAttempts = 0; // Reset reconnect attempts
       this.socket.disconnect();
@@ -116,9 +101,7 @@ class SocketService {
 
   // Event emitters
   startGame() {
-    console.log('📤 Socket: Emitting start_game event', { connected: this.isConnected(), socketId: this.getSocketId() });
     if (!this.isConnected()) {
-      console.error('❌ Socket not connected, cannot start game');
       return;
     }
     this.emit('start_game');
@@ -129,9 +112,7 @@ class SocketService {
   }
 
   selectWord(word: string, topic: string) {
-    console.log('📤 Socket: Emitting select_word event', { word, topic, connected: this.isConnected() });
     if (!this.isConnected()) {
-      console.error('❌ Socket not connected, cannot select word');
       return;
     }
     this.emit('select_word', { word, topic });
@@ -146,7 +127,6 @@ class SocketService {
   }
 
   sendChatMessage(data: Parameters<SocketEvents['chat_message']>[0]) {
-    console.log('📤 Socket service sending chat message:', data);
     this.emit('chat_message', data);
   }
 
@@ -159,7 +139,6 @@ class SocketService {
   }
 
   endRound() {
-    console.log('📤 Socket: Emitting end_round event');
     this.emit('end_round');
   }
 
@@ -183,9 +162,7 @@ class SocketService {
   }
 
   onGameStarted(callback: (data: any) => void) {
-    console.log('👂 Socket: Listening for game_started event');
     this.on('game_started', (data) => {
-      console.log('📥 Socket: Received game_started event:', data);
       callback(data);
     });
   }
@@ -199,9 +176,7 @@ class SocketService {
   }
 
   onRoundStarted(callback: (data: any) => void) {
-    console.log('👂 Socket: Listening for round_started event');
     this.on('round_started', (data) => {
-      console.log('📥 Socket: Received round_started event:', data);
       callback(data);
     });
   }
@@ -252,12 +227,8 @@ class SocketService {
 
   // Generic event handlers
   private emit(event: string, data?: any) {
-    console.log('📤 Attempting to emit event:', event, { connected: this.socket?.connected, data });
     if (this.socket?.connected) {
       this.socket.emit(event, data);
-      console.log('✅ Event emitted successfully:', event);
-    } else {
-      console.warn('⚠️ Socket not connected, cannot emit:', event, { socket: !!this.socket, connected: this.socket?.connected });
     }
   }
 

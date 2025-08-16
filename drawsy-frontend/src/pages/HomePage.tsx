@@ -36,7 +36,6 @@ const HomePage: React.FC = () => {
 
       navigate(`/room/${response.roomId}`);
     } catch (error) {
-      console.error('Failed to create game:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create game');
     } finally {
       setIsCreating(false);

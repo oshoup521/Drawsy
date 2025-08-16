@@ -447,7 +447,7 @@ export class GameService {
       wordLength: game.wordLength,
       topic: wordSuggestion.topic,
       totalRounds: game.numRounds,
-      word: wordSuggestion.word, // Only return for debugging, remove in production
+
     };
   }
 

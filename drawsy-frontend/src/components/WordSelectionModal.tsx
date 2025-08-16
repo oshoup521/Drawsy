@@ -31,14 +31,11 @@ const WordSelectionModal: React.FC<WordSelectionModalProps> = ({
   }, [isOpen, aiWords]);
 
   const handleWordClick = (word: string) => {
-    console.log('🎯 Word clicked:', word);
     setSelectedWord(word);
   };
 
   const handleConfirm = () => {
-    console.log('🚀 Start Drawing button clicked!', { selectedWord });
     if (!selectedWord) {
-      console.warn('⚠️ No word selected');
       return;
     }
     onWordSelect(selectedWord);
