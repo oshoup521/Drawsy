@@ -1,7 +1,8 @@
 import { io, Socket } from 'socket.io-client';
 import { SocketEvents, DrawingData } from '../types/game';
+import { environmentDetector } from './environment';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3000';
+const SOCKET_URL = environmentDetector.getSocketUrl();
 
 class SocketService {
   private socket: Socket | null = null;

@@ -2,27 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { CorsConfigService } from './services/cors-config.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS - Allow all origins for testing (including ngrok)
-  app.enableCors({
-    origin: true, // Allow all origins
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type', 
-      'Authorization', 
-      'X-Requested-With',
-      'ngrok-skip-browser-warning', // For ngrok free domains
-      'Accept',
-      'Origin',
-      'X-Forwarded-For',
-      'X-Forwarded-Proto'
-    ],
-    exposedHeaders: ['*'],
-  });
+  // Get CORS configuration service
+  const corsConfigService = new CorsConfigService();
+  
+  // Enable dynamic CORS - automatically handles localhost and ngrok
+  app.enableCors(corsConfigService.getCorsOptions());
 
   // Enable validation pipe
   app.useGlobalPipes(new ValidationPipe({

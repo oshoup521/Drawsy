@@ -2,7 +2,7 @@ import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseModule } from './database/database.module';
-import { GameController } from './controllers/game.controller';
+import { GameController, HealthController } from './controllers/game.controller';
 import { GameService } from './services/game.service';
 import { LLMService } from './services/llm.service';
 import { GameGateway } from './gateways/game.gateway';
@@ -20,7 +20,7 @@ import { DrawingData } from './entities/drawing-data.entity';
     DatabaseModule,
     TypeOrmModule.forFeature([Game, Player, Round, DrawingData]),
   ],
-  controllers: [GameController],
+  controllers: [GameController, HealthController],
   providers: [GameService, LLMService, GameGateway],
 })
 export class AppModule {

@@ -4,6 +4,22 @@ import { GameService } from '../services/game.service';
 import { CreateGameDto } from '../dto/create-game.dto';
 import { JoinGameDto } from '../dto/join-game.dto';
 
+@ApiTags('health')
+@Controller('api')
+export class HealthController {
+  @Get('health')
+  @ApiOperation({ summary: 'Health check endpoint' })
+  @ApiResponse({ status: 200, description: 'Service is healthy' })
+  async healthCheck() {
+    return {
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      service: 'drawsy-backend',
+      environment: process.env.ENVIRONMENT || 'unknown',
+    };
+  }
+}
+
 @ApiTags('game')
 @Controller('api/game')
 export class GameController {
