@@ -6,9 +6,10 @@ interface WinnerPodiumProps {
   isOpen: boolean;
   players: Player[];
   onClose: () => void;
+  onReturnToLobby?: () => void;
 }
 
-const WinnerPodium: React.FC<WinnerPodiumProps> = ({ isOpen, players, onClose }) => {
+const WinnerPodium: React.FC<WinnerPodiumProps> = ({ isOpen, players, onClose, onReturnToLobby }) => {
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   
@@ -377,10 +378,15 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ isOpen, players, onClose })
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 1.2 }}
-              onClick={onClose}
+              onClick={() => {
+                onClose();
+                if (onReturnToLobby) {
+                  onReturnToLobby();
+                }
+              }}
               className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl text-sm sm:text-base transition-all duration-200 transform hover:scale-105"
             >
-              🎉 Awesome Game! 🎉
+              � Return to Lobby
             </motion.button>
           </motion.div>
         </motion.div>

@@ -444,6 +444,39 @@ const GameRoom: React.FC = () => {
     // Optional: Handle timer tick events
   };
 
+  const handleReturnToLobby = () => {
+    // Reset the game state to lobby
+    setShowWinnerPodium(false);
+    
+    // Reset the game to initial state but keep players and room
+    if (gameState && roomId) {
+      // Update game state to waiting status
+      const lobbyState = {
+        ...gameState,
+        status: 'waiting' as const,
+        currentRound: 0,
+        numRounds: gameState.numRounds || 3,
+        currentDrawerUserId: undefined,
+        currentWord: undefined,
+        wordLength: undefined,
+        topic: undefined,
+        // Reset all player scores
+        players: gameState.players.map(player => ({
+          ...player,
+          score: 0,
+        }))
+      };
+      
+      setGameState(lobbyState);
+      setTimerActive(false);
+      
+      // Clear any existing chat messages from the previous game
+      // (Optional: you might want to keep some messages)
+      
+      toast.success('Returned to lobby! Ready for a new game!');
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -841,6 +874,7 @@ const GameRoom: React.FC = () => {
         isOpen={showWinnerPodium}
         players={gameState?.players || []}
         onClose={() => setShowWinnerPodium(false)}
+        onReturnToLobby={handleReturnToLobby}
       />
       </div>
     </GameFlow>
