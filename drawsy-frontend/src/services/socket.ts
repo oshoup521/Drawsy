@@ -26,6 +26,9 @@ class SocketService {
           timeout: 10000,
           forceNew: true,
           autoConnect: true,
+          extraHeaders: {
+            'ngrok-skip-browser-warning': 'true',
+          },
         });
 
         this.socket.on('connect', () => {

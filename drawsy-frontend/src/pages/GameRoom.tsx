@@ -76,10 +76,29 @@ const GameRoom: React.FC = () => {
           setCurrentUser(user);
         }
 
-        // Get game state
+        // Get game state with better error handling
+        console.log('🎮 Fetching game state for room:', roomId);
         const gameStateData = await gameApi.getGameState(roomId);
+        console.log('🎮 Received game state:', gameStateData);
+        
+        // Validate and sanitize the game state structure
+        if (!gameStateData) {
+          throw new Error('No game state received from server');
+        }
+        
+        // Ensure players array exists and is properly initialized
+        const sanitizedGameState = {
+          ...gameStateData,
+          players: gameStateData.players || [],
+          status: gameStateData.status || 'waiting',
+          currentRound: gameStateData.currentRound || 1,
+          roomId: gameStateData.roomId || roomId,
+        };
+        
+        console.log('🎮 Sanitized game state:', sanitizedGameState);
+        
         if (mounted) {
-          setGameState(gameStateData);
+          setGameState(sanitizedGameState);
         }
 
         // Connect to socket
@@ -91,8 +110,15 @@ const GameRoom: React.FC = () => {
         }
       } catch (error) {
         if (mounted) {
-          toast.error(error instanceof Error ? error.message : 'Failed to connect to room');
-          navigate('/');
+          console.error('❌ Failed to initialize game room:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Failed to connect to room';
+          toast.error(`Connection failed: ${errorMessage}`);
+          
+          // Don't navigate away immediately on ngrok, give user a chance to retry
+          const isNgrok = window.location.hostname.includes('ngrok');
+          if (!isNgrok) {
+            navigate('/');
+          }
         }
       } finally {
         if (mounted) {
@@ -430,13 +456,37 @@ const GameRoom: React.FC = () => {
   }
 
   if (!gameState || !currentUser) {
+    const isNgrok = window.location.hostname.includes('ngrok');
+    
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="glass-card p-8 text-center">
           <p className="text-white mb-4">Failed to load game room</p>
-          <button onClick={() => navigate('/')} className="btn-primary">
-            Go Home
-          </button>
+          <div className="flex gap-2 justify-center">
+            {isNgrok && (
+              <button 
+                onClick={() => window.location.reload()} 
+                className="btn-secondary"
+              >
+                Retry Connection
+              </button>
+            )}
+            <button onClick={() => navigate('/')} className="btn-primary">
+              Go Home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Additional null safety check for players array
+  if (!gameState.players) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card p-8 text-center">
+          <div className="loading-spinner mx-auto mb-4"></div>
+          <p className="text-white">Loading game data...</p>
         </div>
       </div>
     );
