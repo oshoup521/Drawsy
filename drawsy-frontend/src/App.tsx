@@ -4,8 +4,6 @@ import { motion } from 'framer-motion';
 import HomePage from './pages/HomePage';
 import GameRoom from './pages/GameRoom';
 import JoinRoom from './pages/JoinRoom';
-import EnvironmentStatus from './components/EnvironmentStatus';
-import ConnectionHealth from './components/ConnectionHealth';
 import './App.css';
 
 function App() {
@@ -22,9 +20,7 @@ function App() {
           <Route path="/room/:roomId" element={<GameRoom />} />
         </Routes>
         
-        {/* Debug components (only shown when REACT_APP_ENABLE_DEBUG=true) */}
-        <EnvironmentStatus />
-        <ConnectionHealth />
+
       </motion.div>
     </div>
   );

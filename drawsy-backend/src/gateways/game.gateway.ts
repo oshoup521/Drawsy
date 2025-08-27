@@ -24,7 +24,14 @@ interface ConnectedClient {
 
 @WebSocketGateway({
   cors: {
-    origin: true, // Allow all origins for testing
+    origin: [
+      'http://localhost:3001',
+      'http://localhost:3000',
+      'https://crack-leading-feline.ngrok-free.app',
+      'https://intent-knowing-ape.ngrok-free.app',
+      /\.ngrok-free\.app$/,
+      /\.ngrok\.io$/
+    ],
     credentials: true,
     methods: ['GET', 'POST'],
     allowedHeaders: [
@@ -33,9 +40,14 @@ interface ConnectedClient {
       'X-Requested-With',
       'ngrok-skip-browser-warning',
       'Accept',
-      'Origin'
+      'Origin',
+      'User-Agent'
     ],
   },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
 })
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()

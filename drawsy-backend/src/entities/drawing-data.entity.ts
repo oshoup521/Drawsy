@@ -28,7 +28,7 @@ export class DrawingData {
   @Column({ nullable: true })
   strokeId: string;
 
-  @Column()
+  @Column({ default: false })
   isDrawing: boolean;
 
   @Column()

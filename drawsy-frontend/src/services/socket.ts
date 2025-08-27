@@ -17,19 +17,25 @@ class SocketService {
           this.disconnect();
         }
         
-        this.socket = io(SOCKET_URL, {
-          transports: ['websocket', 'polling'],
+        const socketOptions = {
+          transports: ['polling', 'websocket'], // Try polling first for ngrok
           query: {
             roomId,
             userId,
           },
-          timeout: 10000,
+          timeout: 20000, // Increased timeout for ngrok
           forceNew: true,
           autoConnect: true,
+          upgrade: true,
+          rememberUpgrade: false,
           extraHeaders: {
             'ngrok-skip-browser-warning': 'true',
+            'User-Agent': 'DrawsyApp/1.0',
           },
-        });
+          withCredentials: true,
+        };
+
+        this.socket = io(SOCKET_URL, socketOptions);
 
         this.socket.on('connect', () => {
           this.reconnectAttempts = 0;
@@ -58,12 +64,12 @@ class SocketService {
           // Socket error occurred
         });
 
-        // Set connection timeout
+        // Set connection timeout (increased for ngrok)
         setTimeout(() => {
           if (!this.socket?.connected) {
             reject(new Error('Connection timeout'));
           }
-        }, 10000);
+        }, 20000);
 
       } catch (error) {
         reject(error);
