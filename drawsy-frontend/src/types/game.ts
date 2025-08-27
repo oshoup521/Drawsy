@@ -67,6 +67,12 @@ export interface ChatMessage {
   isAI?: boolean;
 }
 
+export interface TypingUser {
+  userId: string;
+  name: string;
+  timestamp: number;
+}
+
 export interface GuessResult {
   userId: string;
   guess: string;
@@ -84,6 +90,8 @@ export interface SocketEvents {
   drawing_data: (data: DrawingData) => void;
   guess_word: (data: GuessWordData) => void;
   chat_message: (data: { userId: string; message: string }) => void;
+  typing_start: (data: { userId: string; name: string }) => void;
+  typing_stop: (data: { userId: string }) => void;
   end_round_request: () => void;
 
   // Server to Client
@@ -124,6 +132,8 @@ export interface SocketEvents {
   correct_guess: (data: { userId: string; playerName: string; scoreAwarded: number }) => void;
   ai_suggestion: (data: { topic: string; word: string }) => void;
   chat_message_broadcast: (data: ChatMessage) => void;
+  typing_start_broadcast: (data: { userId: string; name: string }) => void;
+  typing_stop_broadcast: (data: { userId: string }) => void;
   end_round: (data: {
     roundId: string;
     correctWord: string;

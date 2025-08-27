@@ -124,6 +124,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 userId: clientInfo.userId,
               });
 
+              // Also emit typing_stop in case they were typing when they left
+              client.to(clientInfo.roomId).emit('typing_stop', {
+                userId: clientInfo.userId,
+              });
+
               // If the host left and there's a new host, notify everyone
               if (removeResult.playerRemoved.wasHost && removeResult.newHost) {
                 this.server.to(clientInfo.roomId).emit('host_changed', {
@@ -378,6 +383,49 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     } catch (error) {
       // Chat message error occurred
+    }
+  }
+
+  @SubscribeMessage('typing_start')
+  async handleTypingStart(
+    @MessageBody() data: { userId: string; name: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const clientInfo = this.connectedClients.get(client.id);
+      if (!clientInfo) {
+        return;
+      }
+
+      // Broadcast typing start to all other players in the room
+      client.to(clientInfo.roomId).emit('typing_start', {
+        userId: data.userId,
+        name: data.name,
+      });
+
+    } catch (error) {
+      // Typing start error occurred
+    }
+  }
+
+  @SubscribeMessage('typing_stop')
+  async handleTypingStop(
+    @MessageBody() data: { userId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const clientInfo = this.connectedClients.get(client.id);
+      if (!clientInfo) {
+        return;
+      }
+
+      // Broadcast typing stop to all other players in the room
+      client.to(clientInfo.roomId).emit('typing_stop', {
+        userId: data.userId,
+      });
+
+    } catch (error) {
+      // Typing stop error occurred
     }
   }
 

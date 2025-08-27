@@ -6,6 +6,7 @@ import {
   ChatMessage,
   DrawingData,
   GuessResult,
+  TypingUser,
 } from '../types/game';
 
 interface GameStore {
@@ -21,6 +22,7 @@ interface GameStore {
   // Chat
   chatMessages: ChatMessage[];
   currentRoomId: string | null; // Track current room for chat persistence
+  typingUsers: TypingUser[];
   
   // Drawing
   drawingData: DrawingData[];
@@ -46,6 +48,9 @@ interface GameStore {
   // Chat Actions
   addChatMessage: (message: ChatMessage) => void;
   clearChatMessages: () => void;
+  addTypingUser: (user: TypingUser) => void;
+  removeTypingUser: (userId: string) => void;
+  clearTypingUsers: () => void;
   
   // Drawing Actions
   addDrawingData: (data: DrawingData) => void;
@@ -86,6 +91,7 @@ export const useGameStore = create<GameStore>()(
         currentWord: null,
         chatMessages: [],
         currentRoomId: null,
+        typingUsers: [],
         drawingData: [],
         currentDrawingColor: '#000000',
         currentBrushSize: 4,
@@ -129,6 +135,24 @@ export const useGameStore = create<GameStore>()(
     },
 
     clearChatMessages: () => set({ chatMessages: [] }),
+
+    addTypingUser: (user) => {
+      set((state) => {
+        // Remove existing entry for this user and add new one
+        const filteredUsers = state.typingUsers.filter(u => u.userId !== user.userId);
+        return {
+          typingUsers: [...filteredUsers, user],
+        };
+      });
+    },
+
+    removeTypingUser: (userId) => {
+      set((state) => ({
+        typingUsers: state.typingUsers.filter(u => u.userId !== userId),
+      }));
+    },
+
+    clearTypingUsers: () => set({ typingUsers: [] }),
 
     // Drawing Actions
     addDrawingData: (data) => {
@@ -280,6 +304,7 @@ export const useGameStore = create<GameStore>()(
         currentWord: null,
         // Preserve chat messages when resetting game
         chatMessages: state.chatMessages,
+        typingUsers: [],
         drawingData: [],
         currentDrawingColor: '#000000',
         currentBrushSize: 4,
@@ -299,6 +324,7 @@ export const useGameStore = create<GameStore>()(
         currentWord: null,
         chatMessages: [],
         currentRoomId: null,
+        typingUsers: [],
         drawingData: [],
         currentDrawingColor: '#000000',
         currentBrushSize: 4,
@@ -335,3 +361,4 @@ export const useIsCurrentUserDrawer = () =>
   useGameStore((state) => 
     state.currentUser?.userId === state.gameState?.currentDrawerUserId
   );
+export const useTypingUsers = () => useGameStore((state) => state.typingUsers);

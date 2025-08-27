@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useGameStore, useCurrentUser } from '../store/gameStore';
 import socketService from '../services/socket';
+import TypingIndicator from './TypingIndicator';
 
 interface ChatPanelProps {
   className?: string;
@@ -10,13 +11,74 @@ interface ChatPanelProps {
 const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const { chatMessages, gameState } = useGameStore();
+  const { chatMessages, gameState, addTypingUser, removeTypingUser } = useGameStore();
   const currentUser = useCurrentUser();
 
+  // Handle typing start
+  const handleTypingStart = useCallback(() => {
+    if (!currentUser || isTyping) return;
+    
+    setIsTyping(true);
+    socketService.sendTypingStart({
+      userId: currentUser.userId,
+      name: currentUser.name,
+    });
+  }, [currentUser, isTyping]);
 
+  // Handle typing stop
+  const handleTypingStop = useCallback(() => {
+    if (!currentUser || !isTyping) return;
+    
+    setIsTyping(false);
+    socketService.sendTypingStop({
+      userId: currentUser.userId,
+    });
+  }, [currentUser, isTyping]);
+
+  // Setup socket event listeners for typing
+  useEffect(() => {
+    const handleTypingStartBroadcast = (data: { userId: string; name: string }) => {
+      if (data.userId !== currentUser?.userId) {
+        addTypingUser({
+          userId: data.userId,
+          name: data.name,
+          timestamp: Date.now(),
+        });
+      }
+    };
+
+    const handleTypingStopBroadcast = (data: { userId: string }) => {
+      removeTypingUser(data.userId);
+    };
+
+    socketService.onTypingStart(handleTypingStartBroadcast);
+    socketService.onTypingStop(handleTypingStopBroadcast);
+
+    return () => {
+      socketService.removeListener('typing_start');
+      socketService.removeListener('typing_stop');
+    };
+  }, [currentUser, addTypingUser, removeTypingUser]);
+
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      // Stop typing when component unmounts
+      if (isTyping && currentUser) {
+        socketService.sendTypingStop({
+          userId: currentUser.userId,
+        });
+      }
+    };
+  }, [isTyping, currentUser]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -80,6 +142,17 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
     const message = inputMessage.trim();
 
     console.log('🚀 Sending message from user:', currentUser.userId);
+
+    // Stop typing when sending message
+    if (isTyping) {
+      handleTypingStop();
+    }
+
+    // Clear typing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
 
     // Clear suggestions immediately when user sends a message
     setAiSuggestions([]);
@@ -171,6 +244,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
       {/* Bottom section - inputs and actions */}
       <div className="flex-shrink-0 space-y-3">
+        {/* Typing Indicator - Above input */}
+        <TypingIndicator />
+        
         {/* Chat Input Area */}
         <div className="chat-bottom-area">
           {/* Regular Chat Input */}
@@ -180,10 +256,39 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
               type="text"
               value={inputMessage}
               onChange={(e) => {
-                setInputMessage(e.target.value);
+                const value = e.target.value;
+                setInputMessage(value);
+                
                 // Clear suggestions when user starts typing their own message
-                if (e.target.value.length > 0 && aiSuggestions.length > 0) {
+                if (value.length > 0 && aiSuggestions.length > 0) {
                   setAiSuggestions([]);
+                }
+
+                // Handle typing indicators
+                if (value.trim().length > 0) {
+                  // Start typing if not already typing
+                  if (!isTyping) {
+                    handleTypingStart();
+                  }
+                  
+                  // Reset typing timeout
+                  if (typingTimeoutRef.current) {
+                    clearTimeout(typingTimeoutRef.current);
+                  }
+                  
+                  // Stop typing after 2 seconds of inactivity
+                  typingTimeoutRef.current = setTimeout(() => {
+                    handleTypingStop();
+                  }, 2000);
+                } else {
+                  // Stop typing if input is empty
+                  if (isTyping) {
+                    handleTypingStop();
+                  }
+                  if (typingTimeoutRef.current) {
+                    clearTimeout(typingTimeoutRef.current);
+                    typingTimeoutRef.current = null;
+                  }
                 }
               }}
               onKeyDown={handleKeyPress}

@@ -140,6 +140,14 @@ class SocketService {
     this.emit('chat_message', data);
   }
 
+  sendTypingStart(data: Parameters<SocketEvents['typing_start']>[0]) {
+    this.emit('typing_start', data);
+  }
+
+  sendTypingStop(data: Parameters<SocketEvents['typing_stop']>[0]) {
+    this.emit('typing_stop', data);
+  }
+
   sendClearCanvas() {
     this.emit('clear_canvas');
   }
@@ -213,6 +221,14 @@ class SocketService {
 
   onChatMessage(callback: (data: Parameters<SocketEvents['chat_message_broadcast']>[0]) => void) {
     this.on('chat_message', callback);
+  }
+
+  onTypingStart(callback: (data: Parameters<SocketEvents['typing_start_broadcast']>[0]) => void) {
+    this.on('typing_start', callback);
+  }
+
+  onTypingStop(callback: (data: Parameters<SocketEvents['typing_stop_broadcast']>[0]) => void) {
+    this.on('typing_stop', callback);
   }
 
   onClearCanvas(callback: () => void) {
