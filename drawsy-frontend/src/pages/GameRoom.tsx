@@ -24,6 +24,23 @@ const GameRoom: React.FC = () => {
   const [showScores, setShowScores] = useState(false);
   const [showWinnerPodium, setShowWinnerPodium] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
+
+  // Helper function to truncate name while preserving "(you)" for current user
+  const getDisplayName = (playerName: string, isCurrentUser: boolean, maxLength: number = 15) => {
+    if (!isCurrentUser) {
+      return playerName.length > maxLength ? `${playerName.substring(0, maxLength)}...` : playerName;
+    }
+    
+    // For current user, ensure "(you)" is always visible
+    const youSuffix = ' (you)';
+    const availableLength = maxLength - youSuffix.length;
+    
+    if (playerName.length <= availableLength) {
+      return `${playerName}${youSuffix}`;
+    }
+    
+    return `${playerName.substring(0, availableLength)}...${youSuffix}`;
+  };
   
   const {
     gameState,
@@ -625,8 +642,8 @@ const GameRoom: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <span className="text-white font-semibold truncate">
-                        {player.userId === currentUser.userId ? `${player.name} (you)` : player.name}
+                      <span className="text-white font-semibold" title={player.userId === currentUser.userId ? `${player.name} (you)` : player.name}>
+                        {getDisplayName(player.name, player.userId === currentUser.userId)}
                       </span>
                       {player.isHost && (
                         <span className="text-yellow-400 text-xs flex-shrink-0">👑 Host</span>

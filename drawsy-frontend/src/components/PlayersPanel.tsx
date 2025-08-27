@@ -12,6 +12,23 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
   const currentUser = useCurrentUser();
   const currentDrawer = useCurrentDrawer();
 
+  // Helper function to truncate name while preserving "(you)" for current user
+  const getDisplayName = (player: Player, isCurrentUser: boolean, maxLength: number = 12) => {
+    if (!isCurrentUser) {
+      return player.name.length > maxLength ? `${player.name.substring(0, maxLength)}...` : player.name;
+    }
+    
+    // For current user, ensure "(you)" is always visible
+    const youSuffix = ' (you)';
+    const availableLength = maxLength - youSuffix.length;
+    
+    if (player.name.length <= availableLength) {
+      return `${player.name}${youSuffix}`;
+    }
+    
+    return `${player.name.substring(0, availableLength)}...${youSuffix}`;
+  };
+
   if (!gameState) {
     return (
       <div className={`players-panel ${className}`}>
@@ -79,8 +96,8 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
                 {/* Player Info */}
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-2 min-w-0 mb-1">
-                    <span className="font-semibold text-white truncate flex-1">
-                      {player.userId === currentUser?.userId ? `${player.name} (you)` : player.name}
+                    <span className="font-semibold text-white flex-1" title={player.userId === currentUser?.userId ? `${player.name} (you)` : player.name}>
+                      {getDisplayName(player, player.userId === currentUser?.userId)}
                     </span>
                     {/* Player Status Badge - now inline */}
                     {player.isHost && (
@@ -122,8 +139,8 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
               🏆 Current Leader
             </div>
             <div className="text-center p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-400/30">
-              <div className="text-yellow-400 font-bold">
-                {sortedPlayers[0].userId === currentUser?.userId ? `${sortedPlayers[0].name} (you)` : sortedPlayers[0].name}
+              <div className="text-yellow-400 font-bold" title={sortedPlayers[0].userId === currentUser?.userId ? `${sortedPlayers[0].name} (you)` : sortedPlayers[0].name}>
+                {getDisplayName(sortedPlayers[0], sortedPlayers[0].userId === currentUser?.userId, 15)}
               </div>
               <div className="text-white/80 text-sm">
                 {sortedPlayers[0].score} points
