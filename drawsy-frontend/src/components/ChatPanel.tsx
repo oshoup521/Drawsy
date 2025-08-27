@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGameStore, useCurrentUser, useCurrentDrawer } from '../store/gameStore';
+import { useGameStore, useCurrentUser } from '../store/gameStore';
 import socketService from '../services/socket';
 
 interface ChatPanelProps {
@@ -15,42 +15,83 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
   const { chatMessages, gameState } = useGameStore();
   const currentUser = useCurrentUser();
-  const currentDrawer = useCurrentDrawer();
-  
-  const isGamePlaying = gameState?.status === 'playing';
-  const isCurrentUserDrawer = currentUser?.userId === currentDrawer?.userId;
+
+
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
-  // Extract AI suggestions from new messages
+  // Extract AI suggestions from new messages (only show to others, not the sender)
   useEffect(() => {
     const latestMessage = chatMessages[chatMessages.length - 1];
-    console.log('Latest chat message:', latestMessage);
-    if (latestMessage?.aiSuggestions && latestMessage.aiSuggestions.length > 0 && !latestMessage.isAI) {
-      console.log('Setting AI suggestions:', latestMessage.aiSuggestions);
-      setAiSuggestions(latestMessage.aiSuggestions);
+    console.log('=== AI Suggestions Debug ===');
+    console.log('Latest message:', latestMessage);
+    console.log('Current user:', currentUser);
+    console.log('Message userId:', latestMessage?.userId);
+    console.log('Current user userId:', currentUser?.userId);
+    console.log('Message userId TYPE:', typeof latestMessage?.userId);
+    console.log('Current user userId TYPE:', typeof currentUser?.userId);
+    console.log('Are they different?', latestMessage?.userId !== currentUser?.userId);
+    console.log('Are they equal?', latestMessage?.userId === currentUser?.userId);
+    console.log('Has AI suggestions?', (latestMessage?.aiSuggestions?.length ?? 0) > 0);
+    console.log('Is not AI message?', !latestMessage?.isAI);
+
+    // Clear suggestions first
+    setAiSuggestions([]);
+
+    // Only show AI suggestions if:
+    // 1. Message has AI suggestions
+    // 2. Message is not from AI
+    // 3. Current user exists
+    // 4. Current user is NOT the sender of this message
+    if (latestMessage?.aiSuggestions &&
+      (latestMessage.aiSuggestions?.length ?? 0) > 0 &&
+      !latestMessage.isAI &&
+      currentUser &&
+      latestMessage.userId !== currentUser.userId) {
+      console.log('✅ SHOWING AI suggestions for other users:', latestMessage.aiSuggestions);
+      // Add a small delay to ensure state is clean
+      setTimeout(() => {
+        setAiSuggestions(latestMessage.aiSuggestions || []);
+      }, 50);
     } else {
-      console.log('No AI suggestions found or message is from AI');
+      console.log('❌ NOT showing AI suggestions');
+      if (latestMessage?.userId === currentUser?.userId) {
+        console.log('Reason: User is the sender of this message');
+      }
+      if (!latestMessage?.aiSuggestions || (latestMessage.aiSuggestions?.length ?? 0) === 0) {
+        console.log('Reason: No AI suggestions in message');
+      }
+      if (latestMessage?.isAI) {
+        console.log('Reason: Message is from AI');
+      }
+      if (!currentUser) {
+        console.log('Reason: No current user');
+      }
     }
-  }, [chatMessages]);
+    console.log('=== End Debug ===');
+  }, [chatMessages, currentUser]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim() || !currentUser) return;
 
     const message = inputMessage.trim();
-    
+
+    console.log('🚀 Sending message from user:', currentUser.userId);
+
+    // Clear suggestions immediately when user sends a message
+    setAiSuggestions([]);
+
     // Send message via socket
     socketService.sendChatMessage({
       userId: currentUser.userId,
       message,
     });
 
-    // Clear input and suggestions after sending
+    // Clear input after sending
     setInputMessage('');
-    setAiSuggestions([]);
     inputRef.current?.focus();
   };
 
@@ -62,15 +103,16 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
   const handleSuggestionClick = (suggestion: string) => {
     setInputMessage(suggestion);
+    // Clear suggestions immediately when user clicks a suggestion
     setAiSuggestions([]);
     inputRef.current?.focus();
   };
 
   const formatTime = (timestamp?: number) => {
     if (!timestamp) return '';
-    return new Date(timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -116,7 +158,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                     {formatTime(message.timestamp)}
                   </span>
                 </div>
-                
+
                 <p className="text-white/90 text-sm break-words">
                   {message.message}
                 </p>
@@ -137,14 +179,20 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
               ref={inputRef}
               type="text"
               value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onChange={(e) => {
+                setInputMessage(e.target.value);
+                // Clear suggestions when user starts typing their own message
+                if (e.target.value.length > 0 && aiSuggestions.length > 0) {
+                  setAiSuggestions([]);
+                }
+              }}
+              onKeyDown={handleKeyPress}
               placeholder="Type your message..."
               className="chat-input"
               maxLength={100}
               autoComplete="off"
             />
-            
+
             <button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim()}
@@ -176,7 +224,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                         { emoji: '🤔', bg: 'bg-blue-500/20 hover:bg-blue-500/30', border: 'border-blue-500/30' }
                       ];
                       const mood = moodStyles[index] || moodStyles[0];
-                      
+
                       return (
                         <motion.button
                           key={index}
