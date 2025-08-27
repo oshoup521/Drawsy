@@ -107,28 +107,32 @@ async def generate_word(request: WordGenerationRequest):
             detail="Failed to generate word"
         )
 
-@app.post("/generate-chat-suggestion", response_model=ChatSuggestionResponse)
-async def generate_chat_suggestion(request: ChatSuggestionRequest):
+@app.post("/generate-chat-suggestions", response_model=ChatSuggestionResponse)
+async def generate_chat_suggestions(request: ChatSuggestionRequest):
     """
-    Generate an AI suggestion for chat messages.
+    Generate multiple AI suggestions for chat messages with different moods.
     
-    Takes a chat message and optionally the current word being drawn,
-    then returns an appropriate AI response to add to the conversation.
+    Takes a chat message and returns multiple appropriate AI responses with different moods
+    (encouraging, curious, playful) to enhance the social drawing game experience.
+    The AI understands the game context and responds appropriately without revealing answers.
     """
     try:
-        suggestion = await ai_service.generate_chat_suggestion(
+        suggestions = await ai_service.generate_chat_suggestion(
             request.message,
-            request.currentWord
+            request.count,
+            request.moods
         )
         
-        return ChatSuggestionResponse(suggestion=suggestion)
+        return ChatSuggestionResponse(suggestions=suggestions)
     
     except Exception as e:
-        logger.error(f"Error generating chat suggestion: {e}")
+        logger.error(f"Error generating chat suggestions: {e}")
         raise HTTPException(
             status_code=500,
-            detail="Failed to generate chat suggestion"
+            detail="Failed to generate chat suggestions"
         )
+
+
 
 @app.get("/word-topics")
 async def get_word_topics():

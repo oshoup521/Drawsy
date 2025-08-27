@@ -82,16 +82,43 @@ export class LLMService {
     };
   }
 
-  async generateChatSuggestion(message: string, currentWord?: string): Promise<string> {
+  async generateChatSuggestion(message: string): Promise<string[]> {
     try {
-      const response = await axios.post(`${this.llmServiceUrl}/generate-chat-suggestion`, {
+      this.logger.debug(`Calling LLM service at: ${this.llmServiceUrl}/generate-chat-suggestions`);
+      const response = await axios.post(`${this.llmServiceUrl}/generate-chat-suggestions`, {
         message,
-        currentWord,
+        count: 3,
+        moods: ['encouraging', 'curious', 'playful']
+      }, {
+        timeout: 10000, // 10 second timeout
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
-      return response.data.suggestion;
+      this.logger.debug('LLM service response received successfully');
+      return response.data.suggestions || [];
     } catch (error) {
-      this.logger.error('Failed to generate chat suggestion:', error.message);
-      return "";
+      this.logger.error(`Failed to generate chat suggestions from ${this.llmServiceUrl}:`, error.message);
+      if (error.code === 'ECONNREFUSED') {
+        this.logger.error('LLM service is not reachable. Make sure it\'s running and accessible.');
+      }
+      // Return fallback suggestions when LLM service is unavailable
+      return this.getFallbackSuggestions(message);
+    }
+  }
+
+  private getFallbackSuggestions(message: string): string[] {
+    const messageWords = message.toLowerCase();
+    
+    // Context-aware fallback suggestions
+    if (messageWords.includes('good') || messageWords.includes('nice') || messageWords.includes('great')) {
+      return ['Keep up the amazing work!', 'What do you think it could be?', 'This is getting exciting!'];
+    } else if (messageWords.includes('hard') || messageWords.includes('difficult')) {
+      return ['You\'ve got this!', 'Take your time to observe!', 'The challenge makes it fun!'];
+    } else if (messageWords.includes('what') || messageWords.includes('guess')) {
+      return ['Great effort!', 'Interesting perspective!', 'Keep the guesses coming!'];
+    } else {
+      return ['Looking good!', 'What could that be?', 'This is fun!'];
     }
   }
 }

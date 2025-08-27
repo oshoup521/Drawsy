@@ -350,20 +350,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // Skip AI suggestion for now to test basic functionality
-      let aiSuggestion = "";
+      // Generate AI suggestions with different moods
+      let aiSuggestions: string[] = [];
       try {
-        aiSuggestion = await this.llmService.generateChatSuggestion(
+        console.log('Attempting to generate AI suggestions for message:', data.message);
+        aiSuggestions = await this.llmService.generateChatSuggestion(
           data.message,
         );
+        console.log('AI suggestions generated:', aiSuggestions);
       } catch (error) {
-        // Failed to generate AI suggestion, continuing without it
+        console.error('Failed to generate AI suggestions:', error);
+        // Failed to generate AI suggestions, continuing without them
       }
 
       const chatData = {
         userId: data.userId,
         message: data.message,
-        aiSuggestion,
+        aiSuggestions,
       };
 
 

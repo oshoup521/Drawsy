@@ -17,10 +17,11 @@ class WordGenerationResponse(BaseModel):
 
 class ChatSuggestionRequest(BaseModel):
     message: str
-    currentWord: Optional[str] = None
+    count: Optional[int] = 3
+    moods: Optional[list] = ['encouraging', 'curious', 'playful']
 
 class ChatSuggestionResponse(BaseModel):
-    suggestion: str
+    suggestions: list[str]
 
 class HealthResponse(BaseModel):
     status: str

@@ -115,30 +115,76 @@ class AIService:
             "word": selected_word
         }
 
-    async def generate_chat_suggestion(self, message: str, current_word: str = None) -> str:
-        """Generate an AI suggestion for chat messages."""
+    async def generate_chat_suggestion(self, message: str, count: int = 3, moods: List[str] = None) -> List[str]:
+        """Generate multiple AI suggestions for chat messages with different moods."""
+        
+        if moods is None:
+            moods = ['encouraging', 'curious', 'playful']
+        
+        suggestions = []
         
         if self.openrouter_api_key:
             try:
-                response = await self._generate_openrouter_chat_suggestion(message, current_word)
-                if response:
-                    return response
+                for i, mood in enumerate(moods[:count]):
+                    response = await self._generate_openrouter_chat_suggestion(message, mood)
+                    if response:
+                        suggestions.append(response)
+                    else:
+                        # Fallback if OpenRouter fails for this mood
+                        suggestions.append(self._get_fallback_suggestion(message, mood))
+                
+                if suggestions:
+                    return suggestions
             except Exception as e:
                 logger.error(f"OpenRouter chat suggestion failed: {e}")
         
-        # Simple fallback suggestions
+        # Fallback suggestions with different moods
+        for mood in moods[:count]:
+            suggestions.append(self._get_fallback_suggestion(message, mood))
+        
+        return suggestions
+    
+    def _get_fallback_suggestion(self, message: str, mood: str) -> str:
+        """Generate fallback suggestions based on mood and message context."""
         message_lower = message.lower()
         
-        if "looks like" in message_lower:
-            return "I can see the resemblance!"
-        elif "what is" in message_lower or "what's" in message_lower:
-            return "Keep guessing! You're on the right track!"
-        elif "hard" in message_lower or "difficult" in message_lower:
-            return "Don't give up! Sometimes the best guesses come when you least expect them!"
-        elif "good" in message_lower or "nice" in message_lower:
-            return "Great observation! Art is all about perspective!"
+        # Context-aware responses based on common drawing game scenarios
+        encouraging_responses = {
+            'drawing_progress': ["Keep up the amazing drawing!", "You're doing great!", "Nice work so far!"],
+            'guessing': ["Great guess!", "Keep trying!", "You're on the right track!"],
+            'general': ["Looking good!", "Great effort!", "Keep it up!"]
+        }
+        
+        curious_responses = {
+            'drawing_progress': ["Interesting shape!", "What could that be?", "I wonder what you're creating?"],
+            'guessing': ["Hmm, what is it?", "That's intriguing!", "Curious to see more!"],
+            'general': ["What's happening here?", "This looks interesting!", "Tell me more!"]
+        }
+        
+        playful_responses = {
+            'drawing_progress': ["Ooh, mystery drawing!", "Plot twist incoming!", "This is getting exciting!"],
+            'guessing': ["The suspense is real!", "Fun guessing game!", "What a puzzle!"],
+            'general': ["Fun times ahead!", "This is awesome!", "Love the energy!"]
+        }
+        
+        # Determine context from message
+        context = 'general'
+        if any(word in message_lower for word in ['draw', 'drawing', 'sketch', 'line', 'shape']):
+            context = 'drawing_progress'
+        elif any(word in message_lower for word in ['guess', 'think', 'looks like', 'is it', 'what is']):
+            context = 'guessing'
+        
+        # Select appropriate response based on mood and context
+        if mood == 'encouraging':
+            responses = encouraging_responses[context]
+        elif mood == 'curious':
+            responses = curious_responses[context]
+        elif mood == 'playful':
+            responses = playful_responses[context]
         else:
-            return ""
+            responses = encouraging_responses['general']
+        
+        return random.choice(responses)
 
     async def _generate_openrouter_funny_response(self, guess: str, correct_word: str) -> str:
         """Generate funny response using OpenRouter with Gemini."""
@@ -208,8 +254,8 @@ Respond with just the word, nothing else."""
             logger.error(f"OpenRouter word generation error: {e}")
             return None
 
-    async def _generate_openrouter_chat_suggestion(self, message: str, current_word: str = None) -> str:
-        """Generate chat suggestion using OpenRouter with Gemini."""
+    async def _generate_openrouter_chat_suggestion(self, message: str, mood: str = "encouraging") -> str:
+        """Generate chat suggestion using OpenRouter with Gemini for a specific mood."""
         try:
             headers = {
                 "Authorization": f"Bearer {self.openrouter_api_key}",
@@ -218,17 +264,40 @@ Respond with just the word, nothing else."""
                 "X-Title": "Drawsy Game"
             }
             
-            context = f" The current word being drawn is '{current_word}'." if current_word else ""
-            prompt = f"""Someone in a drawing game chat said: "{message}"{context}
-Generate a brief, encouraging AI response that adds to the conversation.
-Keep it under 15 words and don't reveal any answers.
-If the message doesn't warrant a response, return empty string."""
+            system_prompt = """You are an AI assistant in a multiplayer drawing guessing game called Drawsy. 
+In this game, one player draws while others try to guess what they're drawing through chat messages.
+Your role is to respond to chat messages in a way that enhances the social experience without giving away answers.
+
+Key rules:
+- Never reveal or hint at what's being drawn
+- Keep responses under 12 words
+- Be natural and conversational
+- Match the requested mood/tone
+- Focus on the social aspect and game experience
+- Respond to player emotions and observations about the drawing process"""
+            
+            mood_instructions = {
+                "encouraging": "Be supportive and motivating. Cheer players on and boost their confidence.",
+                "curious": "Show genuine interest and wonder. Ask thoughtful questions about the drawing process.",
+                "playful": "Be fun and energetic. Add excitement and humor to keep the game lively."
+            }
+            
+            mood_instruction = mood_instructions.get(mood, mood_instructions["encouraging"])
+            
+            user_prompt = f"""A player in the drawing game just said: "{message}"
+
+{mood_instruction}
+
+Generate a brief, {mood} response that adds to the conversation."""
             
             payload = {
                 "model": self.openrouter_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "max_tokens": 30,
-                "temperature": 0.7
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "max_tokens": 25,
+                "temperature": 0.8
             }
             
             response = requests.post(self.openrouter_base_url, headers=headers, json=payload)
