@@ -65,6 +65,10 @@ export interface ChatMessage {
   aiSuggestions?: string[];
   timestamp?: number;
   isAI?: boolean;
+  isCorrectGuess?: boolean;
+  isIncorrectGuess?: boolean;
+  guess?: string;
+  playerName?: string;
 }
 
 export interface TypingUser {
@@ -75,6 +79,7 @@ export interface TypingUser {
 
 export interface GuessResult {
   userId: string;
+  playerName: string;
   guess: string;
   correct: boolean;
   funnyResponse?: string;

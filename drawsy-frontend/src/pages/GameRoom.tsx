@@ -291,25 +291,40 @@ const GameRoom: React.FC = () => {
       });
     };
 
-    // Correct guess events
-    const handleCorrectGuess = (data: { userId: string; playerName: string; scoreAwarded: number }) => {
-      // Update the player's score in the game state
-      updatePlayer({
-        userId: data.userId,
-        name: data.playerName,
-        score: (gameState?.players.find(p => p.userId === data.userId)?.score || 0) + data.scoreAwarded,
-      });
+    // Guess result events
+    const handleGuessResult = (data: { userId: string; playerName: string; guess: string; correct: boolean; funnyResponse?: string; scoreAwarded: number }) => {
+      if (data.correct) {
+        // Update the player's score in the game state
+        updatePlayer({
+          userId: data.userId,
+          name: data.playerName,
+          score: (gameState?.players.find(p => p.userId === data.userId)?.score || 0) + data.scoreAwarded,
+        });
 
-      // Add a celebratory chat message
-      addChatMessage({
-        userId: 'system',
-        message: `🎉 ${data.playerName} guessed correctly! +${data.scoreAwarded} points!`,
-        isAI: true,
-        timestamp: Date.now(),
-      });
+        // Add a celebratory chat message with green background (don't show the actual guess to avoid spoiling for others)
+        addChatMessage({
+          userId: 'system',
+          message: `🎉 ${data.playerName} guessed correctly! +${data.scoreAwarded} points!`,
+          isAI: true,
+          timestamp: Date.now(),
+          isCorrectGuess: true,
+          // Don't include guess for correct answers to avoid spoiling for other players
+        });
 
-      // Show toast notification
-      toast.success(`🎯 ${data.playerName} got it right! +${data.scoreAwarded} points!`);
+        // Show toast notification
+        toast.success(`🎯 ${data.playerName} got it right! +${data.scoreAwarded} points!`);
+      } else {
+        // Add incorrect guess message with red background and funny AI response
+        addChatMessage({
+          userId: 'system',
+          message: data.funnyResponse || "Nice try! Keep guessing!",
+          isAI: true,
+          timestamp: Date.now(),
+          isIncorrectGuess: true,
+          guess: data.guess,
+          playerName: data.playerName,
+        });
+      }
     };
 
     // Round started event - activate timer
@@ -391,7 +406,7 @@ const GameRoom: React.FC = () => {
     socketService.onHostChanged(handleHostChanged);
     socketService.onGameStarted(handleGameStart);
     socketService.onChatMessage(handleChatMessage);
-    socketService.onCorrectGuess(handleCorrectGuess);
+    socketService.onGuessResult(handleGuessResult);
     socketService.onRoundStarted(handleRoundStarted);
     socketService.onRoundEnded(handleRoundEnded);
     socketService.onGameOver(handleGameOver);
@@ -404,7 +419,7 @@ const GameRoom: React.FC = () => {
       socketService.removeListener('host_changed');
       socketService.removeListener('game_started');
       socketService.removeListener('chat_message');
-      socketService.removeListener('correct_guess');
+      socketService.removeListener('guess_result');
       socketService.removeListener('round_started');
       socketService.removeListener('end_round');
       socketService.removeListener('game_over');

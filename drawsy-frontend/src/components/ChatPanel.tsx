@@ -221,7 +221,9 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className={`chat-message ${message.isAI ? 'ai-message' : ''}`}
+                className={`chat-message ${message.isAI ? 'ai-message' : ''} ${
+                  message.isCorrectGuess ? 'correct-guess-message' : ''
+                } ${message.isIncorrectGuess ? 'incorrect-guess-message' : ''}`}
               >
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <span className="font-semibold text-white text-sm">
@@ -231,6 +233,15 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                     {formatTime(message.timestamp)}
                   </span>
                 </div>
+
+                {/* Show guess info only for incorrect guesses (don't spoil correct answers for other players) */}
+                {message.isIncorrectGuess && message.guess && (
+                  <div className="mb-2 text-xs text-white/80">
+                    {message.playerName && (
+                      <span className="font-medium">{message.playerName}</span>
+                    )} guessed: <span className="font-mono bg-white/10 px-1 rounded">{message.guess}</span>
+                  </div>
+                )}
 
                 <p className="text-white/90 text-sm break-words">
                   {message.message}
