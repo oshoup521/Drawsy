@@ -14,6 +14,7 @@ import WinnerPodium from '../components/WinnerPodium';
 import { useGameStore, useIsCurrentUserDrawer } from '../store/gameStore';
 import { gameApi } from '../services/api';
 import socketService from '../services/socket';
+import { celebrateWinner } from '../utils/confetti';
 
 const GameRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -308,6 +309,9 @@ const GameRoom: React.FC = () => {
       }
 
       if (data.correct) {
+        // Celebrate with confetti!
+        celebrateWinner();
+        
         // Update the player's score in the game state
         updatePlayer({
           userId: data.userId,

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Player } from '../types/game';
+import { celebratePodium } from '../utils/confetti';
 
 interface WinnerPodiumProps {
   isOpen: boolean;
@@ -20,88 +21,11 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ isOpen, players, onClose, o
   const showThirdPlace = topPlayers.length >= 3;
   const showSecondPlace = topPlayers.length >= 2;
 
-  // Inject CSS styles dynamically
+  // Trigger confetti when podium opens
   useEffect(() => {
-    if (!isOpen) return;
-
-    const styleId = 'confetti-styles';
-    const existingStyle = document.getElementById(styleId);
-    
-    if (existingStyle) {
-      existingStyle.remove();
+    if (isOpen) {
+      celebratePodium();
     }
-
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      @keyframes confetti-fall {
-        0% {
-          transform: translateY(-100vh) translateX(0) rotate(0deg) scale(0);
-          opacity: 1;
-        }
-        10% {
-          transform: translateY(-90vh) translateX(0) rotate(36deg) scale(1);
-          opacity: 1;
-        }
-        20% {
-          transform: translateY(-70vh) translateX(var(--random-x-1)) rotate(72deg) scale(1);
-          opacity: 1;
-        }
-        50% {
-          transform: translateY(-20vh) translateX(var(--random-x-2)) rotate(180deg) scale(0.8);
-          opacity: 0.8;
-        }
-        80% {
-          transform: translateY(20vh) translateX(var(--random-x-3)) rotate(300deg) scale(0.6);
-          opacity: 0.6;
-        }
-        100% {
-          transform: translateY(100vh) translateX(var(--random-x-4)) rotate(var(--rotation)) scale(0);
-          opacity: 0;
-        }
-      }
-
-      @keyframes burst {
-        0% {
-          transform: scale(0) rotate(0deg);
-          opacity: 0;
-        }
-        50% {
-          transform: scale(1.2) rotate(180deg);
-          opacity: 1;
-        }
-        100% {
-          transform: scale(0.8) rotate(360deg);
-          opacity: 0.7;
-        }
-      }
-
-      .confetti-piece {
-        position: absolute;
-        pointer-events: none;
-        font-size: var(--size);
-        animation: confetti-fall var(--duration) var(--delay) ease-in-out infinite;
-        left: var(--start-x);
-        top: 0;
-        z-index: 1000;
-      }
-
-      .burst-effect {
-        animation: burst 0.6s ease-out forwards;
-        position: absolute;
-        font-size: 2rem;
-        pointer-events: none;
-      }
-    `;
-    
-    document.head.appendChild(style);
-
-    return () => {
-      const styleToRemove = document.getElementById(styleId);
-      if (styleToRemove) {
-        styleToRemove.remove();
-      }
-    };
   }, [isOpen]);
 
   const getPodiumHeight = (position: number) => {
@@ -131,28 +55,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ isOpen, players, onClose, o
     }
   };
 
-  // Create confetti pieces with random properties
-  const createConfettiPiece = (index: number) => {
-    const shapes = ['🎉', '🎊', '⭐', '✨', '🌟', '💫', '🎆'];
-    const startX = Math.random() * 100;
-    
-    return {
-      id: index,
-      emoji: shapes[Math.floor(Math.random() * shapes.length)],
-      size: Math.random() * 15 + 20,
-      startX,
-      duration: Math.random() * 2 + 3,
-      delay: Math.random() * 3,
-      rotation: Math.random() * 720 + 360,
-      // Pre-calculate random X positions for smooth animation
-      randomX1: startX + (Math.random() * 40 - 20),
-      randomX2: startX + (Math.random() * 60 - 30),
-      randomX3: startX + (Math.random() * 80 - 40),
-      randomX4: startX + (Math.random() * 100 - 50),
-    };
-  };
 
-  const confettiPieces = Array.from({ length: 40 }, (_, i) => createConfettiPiece(i));
 
   return (
     <AnimatePresence>
@@ -164,62 +67,7 @@ const WinnerPodium: React.FC<WinnerPodiumProps> = ({ isOpen, players, onClose, o
           className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto"
           onClick={onClose}
         >
-          {/* Amazing Confetti Animation */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {confettiPieces.map((piece) => (
-              <div
-                key={piece.id}
-                className="confetti-piece"
-                style={{
-                  '--size': `${piece.size}px`,
-                  '--start-x': `${piece.startX}%`,
-                  '--duration': `${piece.duration}s`,
-                  '--delay': `${piece.delay}s`,
-                  '--rotation': `${piece.rotation}deg`,
-                  '--random-x-1': `${piece.randomX1}%`,
-                  '--random-x-2': `${piece.randomX2}%`,
-                  '--random-x-3': `${piece.randomX3}%`,
-                  '--random-x-4': `${piece.randomX4}%`,
-                  fontSize: `${piece.size}px`,
-                } as React.CSSProperties}
-              >
-                {piece.emoji}
-              </div>
-            ))}
-            
-            {/* Center Burst Effect */}
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div
-                  key={`burst-${i}`}
-                  className="burst-effect"
-                  style={{
-                    transform: `rotate(${i * 30}deg) translateY(-60px)`,
-                    animationDelay: `${i * 0.1}s`,
-                  }}
-                >
-                  🎆
-                </div>
-              ))}
-            </div>
 
-            {/* Side Sparkles */}
-            {[...Array(8)].map((_, i) => (
-              <div
-                key={`side-burst-${i}`}
-                className="absolute animate-ping"
-                style={{
-                  top: `${20 + Math.random() * 60}%`,
-                  left: i < 4 ? `${Math.random() * 20}%` : `${80 + Math.random() * 20}%`,
-                  animationDelay: `${Math.random() * 2}s`,
-                  animationDuration: `${1 + Math.random()}s`,
-                  fontSize: `${1 + Math.random()}rem`,
-                }}
-              >
-                ✨
-              </div>
-            ))}
-          </div>
 
           <motion.div
             initial={{ scale: 0.8, opacity: 0, y: 50 }}
