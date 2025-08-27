@@ -19,6 +19,7 @@ export interface GameState {
   currentWord?: string;
   wordLength?: number;
   topic?: string;
+  correctGuessers?: string[];
 }
 
 export interface CreateGameRequest {
@@ -84,6 +85,7 @@ export interface GuessResult {
   correct: boolean;
   funnyResponse?: string;
   scoreAwarded: number;
+  alreadyGuessedCorrectly?: boolean;
 }
 
 // WebSocket Events

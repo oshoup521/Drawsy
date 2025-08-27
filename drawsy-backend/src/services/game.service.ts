@@ -248,9 +248,10 @@ export class GameService {
       throw new BadRequestException('Game is not in playing state');
     }
 
-    // Update game with selected word
+    // Update game with selected word and reset correct guessers for new round
     game.currentWord = word;
     game.wordLength = word.length;
+    game.correctGuessers = []; // Reset correct guessers for new round
     await this.gameRepository.save(game);
 
     // Create round record
@@ -289,6 +290,22 @@ export class GameService {
       throw new NotFoundException('Player not found');
     }
 
+    // Check if player has already guessed correctly in this round
+    const correctGuessers = game.correctGuessers || [];
+    const hasAlreadyGuessedCorrectly = correctGuessers.includes(userId);
+
+    if (hasAlreadyGuessedCorrectly) {
+      return {
+        userId,
+        playerName: player.name,
+        guess,
+        correct: false,
+        funnyResponse: "You've already guessed correctly! Let others have a chance! 😊",
+        scoreAwarded: 0,
+        alreadyGuessedCorrectly: true,
+      };
+    }
+
     const isCorrect = guess.toLowerCase().trim() === game.currentWord.toLowerCase().trim();
     
     let funnyResponse = '';
@@ -300,6 +317,10 @@ export class GameService {
       // Award points
       player.score += 50;
       await this.playerRepository.save(player);
+
+      // Add player to correct guessers list
+      game.correctGuessers = [...correctGuessers, userId];
+      await this.gameRepository.save(game);
     }
 
     return {
@@ -309,6 +330,7 @@ export class GameService {
       correct: isCorrect,
       funnyResponse,
       scoreAwarded: isCorrect ? 50 : 0,
+      alreadyGuessedCorrectly: false,
     };
   }
 
@@ -429,6 +451,7 @@ export class GameService {
     game.currentDrawerUserId = nextDrawer.userId;
     game.currentWord = wordSuggestion.word;
     game.wordLength = wordSuggestion.word.length;
+    game.correctGuessers = []; // Reset correct guessers for new round
 
     await this.gameRepository.save(game);
 

@@ -54,6 +54,9 @@ export class Game {
   @Column({ nullable: true })
   wordLength: number;
 
+  @Column('simple-array', { nullable: true })
+  correctGuessers: string[];
+
   @OneToMany(() => Player, (player) => player.game, { cascade: true })
   players: Player[];
 

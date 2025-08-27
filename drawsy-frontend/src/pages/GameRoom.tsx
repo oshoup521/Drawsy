@@ -292,7 +292,21 @@ const GameRoom: React.FC = () => {
     };
 
     // Guess result events
-    const handleGuessResult = (data: { userId: string; playerName: string; guess: string; correct: boolean; funnyResponse?: string; scoreAwarded: number }) => {
+    const handleGuessResult = (data: { userId: string; playerName: string; guess: string; correct: boolean; funnyResponse?: string; scoreAwarded: number; alreadyGuessedCorrectly?: boolean }) => {
+      if (data.alreadyGuessedCorrectly) {
+        // Player already guessed correctly, show message but don't award points
+        addChatMessage({
+          userId: 'system',
+          message: data.funnyResponse || "You've already guessed correctly! Let others have a chance! 😊",
+          isAI: true,
+          timestamp: Date.now(),
+          isIncorrectGuess: true,
+          guess: data.guess,
+          playerName: data.playerName,
+        });
+        return;
+      }
+
       if (data.correct) {
         // Update the player's score in the game state
         updatePlayer({
@@ -300,6 +314,12 @@ const GameRoom: React.FC = () => {
           name: data.playerName,
           score: (gameState?.players.find(p => p.userId === data.userId)?.score || 0) + data.scoreAwarded,
         });
+
+        // Add player to correct guessers list in game state
+        updateGameState((prev) => prev ? {
+          ...prev,
+          correctGuessers: [...(prev.correctGuessers || []), data.userId]
+        } : null);
 
         // Add a celebratory chat message with green background (don't show the actual guess to avoid spoiling for others)
         addChatMessage({
@@ -336,6 +356,7 @@ const GameRoom: React.FC = () => {
         currentRound: data.roundNumber,
         wordLength: data.wordLength,
         topic: data.topic,
+        correctGuessers: [], // Reset correct guessers for new round
       } : null);
     };
 
