@@ -46,11 +46,11 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, width, height);
 
-    // Group drawing data by strokeId
+    // Group drawing data by strokeId and sort by order within each stroke
     const strokeGroups = new Map<string, DrawingData[]>();
     
     allDrawingData.current.forEach(data => {
-      const strokeId = data.strokeId || `${data.x}-${data.y}`;
+      const strokeId = data.strokeId || `fallback-${data.x}-${data.y}`;
       if (!strokeGroups.has(strokeId)) {
         strokeGroups.set(strokeId, []);
       }
@@ -58,20 +58,45 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     });
 
     // Draw each stroke completely
-    strokeGroups.forEach(strokeData => {
+    strokeGroups.forEach((strokeData, strokeId) => {
       if (strokeData.length === 0) return;
       
-      // Sort by drawing order: start points first, then continue points
-      strokeData.sort((a, b) => {
-        if (a.isDrawing === false && b.isDrawing === true) return -1;
-        if (a.isDrawing === true && b.isDrawing === false) return 1;
-        return 0;
-      });
+      // Separate start point and continuation points
+      const startPoint = strokeData.find(point => point.isDrawing === false);
+      const continuePoints = strokeData.filter(point => point.isDrawing === true);
 
-      const startPoint = strokeData[0];
-      const continuePoints = strokeData.slice(1);
+      if (!startPoint) {
+        // No start point found, use the first point as start point
+        if (continuePoints.length > 0) {
+          const firstPoint = continuePoints[0];
+          const remainingPoints = continuePoints.slice(1);
+          
+          // Set up drawing style
+          ctx.strokeStyle = firstPoint.color;
+          ctx.lineWidth = firstPoint.lineWidth;
+          ctx.lineCap = 'round';
+          ctx.lineJoin = 'round';
 
-      if (continuePoints.length === 0) return; // No line to draw if only start point
+          if (remainingPoints.length === 0) {
+            // Just a single point/dot
+            ctx.beginPath();
+            ctx.arc(firstPoint.x, firstPoint.y, firstPoint.lineWidth / 2, 0, 2 * Math.PI);
+            ctx.fillStyle = firstPoint.color;
+            ctx.fill();
+          } else {
+            // Draw the stroke starting from first point
+            ctx.beginPath();
+            ctx.moveTo(firstPoint.x, firstPoint.y);
+            
+            remainingPoints.forEach(point => {
+              ctx.lineTo(point.x, point.y);
+            });
+            
+            ctx.stroke();
+          }
+        }
+        return;
+      }
 
       // Set up drawing style
       ctx.strokeStyle = startPoint.color;
@@ -79,15 +104,24 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
-      // Draw the complete stroke
-      ctx.beginPath();
-      ctx.moveTo(startPoint.x, startPoint.y);
-      
-      continuePoints.forEach(point => {
-        ctx.lineTo(point.x, point.y);
-      });
-      
-      ctx.stroke();
+      if (continuePoints.length === 0) {
+        // Just a single point/dot - draw a small circle
+        ctx.beginPath();
+        ctx.arc(startPoint.x, startPoint.y, startPoint.lineWidth / 2, 0, 2 * Math.PI);
+        ctx.fillStyle = startPoint.color;
+        ctx.fill();
+      } else {
+        // Draw the complete stroke as a continuous path
+        ctx.beginPath();
+        ctx.moveTo(startPoint.x, startPoint.y);
+        
+        // Draw lines to each continuation point
+        continuePoints.forEach(point => {
+          ctx.lineTo(point.x, point.y);
+        });
+        
+        ctx.stroke();
+      }
     });
   }, [width, height]);
 
@@ -105,11 +139,11 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     ctx.lineJoin = 'round';
 
     if (data.isDrawing === false) {
-      // Start new stroke
+      // Start new stroke - begin path and move to starting point
       ctx.beginPath();
       ctx.moveTo(data.x, data.y);
     } else {
-      // Continue stroke
+      // Continue stroke - draw line to current point
       ctx.lineTo(data.x, data.y);
       ctx.stroke();
     }
@@ -151,6 +185,21 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   // Listen for drawing data from other players
   useEffect(() => {
     const handleDrawingData = (data: DrawingData) => {
+      console.log('Received drawing data:', data);
+      
+      // Check for duplicates to prevent duplicate drawing data
+      const isDuplicate = allDrawingData.current.some(existing => 
+        existing.x === data.x && 
+        existing.y === data.y && 
+        existing.strokeId === data.strokeId && 
+        existing.isDrawing === data.isDrawing
+      );
+      
+      if (isDuplicate) {
+        console.log('Duplicate data detected, skipping:', data);
+        return;
+      }
+      
       // Add to our drawing data collection
       allDrawingData.current.push(data);
       
@@ -239,6 +288,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       strokeId: strokeId,
       isDrawing: false,
     };
+
+
 
     // For local drawing, draw immediately and add to our data
     drawLocal(drawingData);
