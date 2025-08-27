@@ -110,6 +110,12 @@ export interface SocketEvents {
     drawerName: string;
     totalPlayers: number;
   }) => void;
+  next_round_started: (data: {
+    currentRound: number;
+    drawerUserId: string;
+    drawerName: string;
+    totalPlayers: number;
+  }) => void;
   request_topic_selection: (data: {
     drawerUserId: string;
     roundNumber: number;

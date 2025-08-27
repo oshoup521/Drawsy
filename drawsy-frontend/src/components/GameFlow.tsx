@@ -27,12 +27,25 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
 
   // Socket event handlers
   useEffect(() => {
-    const handleGameStarted = (data: any) => {
-      updateGameState((prev) => prev ? { ...prev, status: 'playing' } : null);
+    const handleNextRoundStarted = (data: any) => {
+      updateGameState((prev) => prev ? {
+        ...prev,
+        currentRound: data.currentRound,
+        currentDrawerUserId: data.drawerUserId,
+        status: 'playing',
+        currentWord: undefined,
+        wordLength: undefined,
+        topic: undefined,
+      } : null);
+      
+      // Clear any existing word
+      setCurrentWord(null);
     };
 
     const handleRequestTopicSelection = (data: any) => {
-      if (isCurrentUserDrawer) {
+      // Check if this user is the intended drawer based on the event data
+      const currentUser = useGameStore.getState().currentUser;
+      if (currentUser?.userId === data.drawerUserId) {
         setShowTopicModal(true);
       }
     };
@@ -63,24 +76,8 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
       setCurrentWord(data.word);
     };
 
-    const handleNextRoundStart = (data: any) => {
-      // This handles when a new round starts automatically after the previous round ended
-      updateGameState((prev) => prev ? {
-        ...prev,
-        currentRound: data.currentRound,
-        currentDrawerUserId: data.drawerUserId,
-        status: 'playing',
-        currentWord: undefined,
-        wordLength: undefined,
-        topic: undefined,
-      } : null);
-      
-      // Clear any existing word
-      setCurrentWord(null);
-    };
-
     // Register event listeners
-    socketService.onGameStarted(handleGameStarted);
+    socketService.onNextRoundStarted(handleNextRoundStarted);
     socketService.onRequestTopicSelection(handleRequestTopicSelection);
     socketService.onTopicWords(handleTopicWords);
     socketService.onRoundStarted(handleRoundStarted);
@@ -88,7 +85,7 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
 
     return () => {
       // Clean up listeners
-      socketService.removeListener('game_started');
+      socketService.removeListener('next_round_started');
       socketService.removeListener('request_topic_selection');
       socketService.removeListener('topic_words');
       socketService.removeListener('round_started');

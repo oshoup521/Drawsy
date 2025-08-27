@@ -185,6 +185,12 @@ class SocketService {
     });
   }
 
+  onNextRoundStarted(callback: (data: any) => void) {
+    this.on('next_round_started', (data) => {
+      callback(data);
+    });
+  }
+
   onRequestTopicSelection(callback: (data: any) => void) {
     this.on('request_topic_selection', callback);
   }

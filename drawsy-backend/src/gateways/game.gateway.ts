@@ -178,16 +178,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // Broadcast game start to all players
       this.server.to(clientInfo.roomId).emit('game_started', gameData);
 
-      // Send topic selection request to the drawer
-      const drawerConnection = Array.from(this.connectedClients.values())
-        .find(conn => conn.userId === gameData.drawerUserId && conn.roomId === clientInfo.roomId);
+      // Send topic selection request only to the drawer
+      const drawerConnections = Array.from(this.connectedClients.values())
+        .filter(conn => conn.userId === gameData.drawerUserId && conn.roomId === clientInfo.roomId);
 
-      if (drawerConnection) {
+      // Send to all connections of the drawer (in case they have multiple tabs)
+      drawerConnections.forEach(drawerConnection => {
         drawerConnection.socket.emit('request_topic_selection', {
           drawerUserId: gameData.drawerUserId,
           roundNumber: gameData.currentRound,
         });
-      }
+      });
 
     } catch (error) {
       client.emit('error', { message: error.message });
@@ -203,9 +204,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) return;
 
+      // Verify that the user is the current drawer
+      const gameState = await this.gameService.getGameState(clientInfo.roomId);
+      if (gameState.currentDrawerUserId !== clientInfo.userId) {
+        client.emit('error', { message: 'Only the current drawer can select topics' });
+        return;
+      }
+
       const wordsData = await this.gameService.selectTopicAndGetWords(clientInfo.roomId, data.topic);
 
-      // Send words to the drawer for selection
+      // Send words only to the drawer for selection
       client.emit('topic_words', wordsData);
 
     } catch (error) {
@@ -221,6 +229,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) {
+        return;
+      }
+
+      // Verify that the user is the current drawer
+      const gameState = await this.gameService.getGameState(clientInfo.roomId);
+      if (gameState.currentDrawerUserId !== clientInfo.userId) {
+        client.emit('error', { message: 'Only the current drawer can select words' });
         return;
       }
 
@@ -439,54 +454,40 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const gameState = await this.gameService.getGameState(clientInfo.roomId);
       const correctWord = gameState.currentWord || 'Unknown';
 
-      // End the current round
-      const endRoundResult = await this.gameService.endRound(clientInfo.roomId);
+      // Emit round ended event first
+      this.server.to(clientInfo.roomId).emit('end_round', {
+        correctWord,
+        scores: gameState.players,
+      });
 
-      if ('gameStatus' in endRoundResult && endRoundResult.gameStatus === 'finished') {
-        // Game is over
-        this.server.to(clientInfo.roomId).emit('game_over', endRoundResult);
+      // Check if this was the last round BEFORE calling any service methods
+      if (gameState.currentRound >= gameState.numRounds) {
+        // Game should end
+        const gameResult = await this.gameService.endGame(clientInfo.roomId);
+        this.server.to(clientInfo.roomId).emit('game_over', gameResult);
       } else {
-        // Emit round ended event first
-        this.server.to(clientInfo.roomId).emit('end_round', {
-          correctWord,
-          scores: gameState.players,
+        // Start next round - select next drawer and request topic selection
+        const nextDrawerResult = await this.gameService.selectNextDrawer(clientInfo.roomId);
+
+        // Notify about next round starting
+        this.server.to(clientInfo.roomId).emit('next_round_started', {
+          currentRound: nextDrawerResult.roundNumber,
+          drawerUserId: nextDrawerResult.currentDrawerUserId,
+          drawerName: nextDrawerResult.drawerName,
+          totalPlayers: nextDrawerResult.totalActivePlayers,
         });
 
-        // Wait a moment then start next round
-        setTimeout(async () => {
-          try {
-            // Check if this was the last round
-            if (gameState.currentRound >= gameState.numRounds) {
-              // Game should end
-              const gameResult = await this.gameService.endGame(clientInfo.roomId);
-              this.server.to(clientInfo.roomId).emit('game_over', gameResult);
-            } else {
-              // Start next round - select next drawer and request topic selection
-              const nextDrawerResult = await this.gameService.selectNextDrawer(clientInfo.roomId);
+        // Send topic selection request only to the new drawer
+        const drawerConnections = Array.from(this.connectedClients.values())
+          .filter(conn => conn.userId === nextDrawerResult.currentDrawerUserId && conn.roomId === clientInfo.roomId);
 
-              // Notify about next round starting
-              this.server.to(clientInfo.roomId).emit('game_started', {
-                currentRound: gameState.currentRound + 1,
-                drawerUserId: nextDrawerResult.currentDrawerUserId,
-                drawerName: nextDrawerResult.drawerName,
-                totalPlayers: nextDrawerResult.totalActivePlayers,
-              });
-
-              // Send topic selection request to new drawer
-              const drawerConnection = Array.from(this.connectedClients.values())
-                .find(conn => conn.userId === nextDrawerResult.currentDrawerUserId && conn.roomId === clientInfo.roomId);
-
-              if (drawerConnection) {
-                drawerConnection.socket.emit('request_topic_selection', {
-                  drawerUserId: nextDrawerResult.currentDrawerUserId,
-                  roundNumber: gameState.currentRound + 1,
-                });
-              }
-            }
-          } catch (error) {
-            // Error starting next round
-          }
-        }, 2000); // 2 second delay to show round end results
+        // Send to all connections of the new drawer (in case they have multiple tabs)
+        drawerConnections.forEach(drawerConnection => {
+          drawerConnection.socket.emit('request_topic_selection', {
+            drawerUserId: nextDrawerResult.currentDrawerUserId,
+            roundNumber: nextDrawerResult.roundNumber,
+          });
+        });
       }
 
     } catch (error) {

@@ -23,7 +23,7 @@ export class GameService {
     @InjectRepository(DrawingData)
     private drawingDataRepository: Repository<DrawingData>,
     private llmService: LLMService,
-  ) {}
+  ) { }
 
   async createGame(createGameDto: CreateGameDto) {
     const roomId = this.generateRoomId();
@@ -190,10 +190,11 @@ export class GameService {
     }
     const randomIndex = Math.floor(Math.random() * activePlayers.length);
     const firstDrawer = activePlayers[randomIndex];
-    
+
     game.status = GameStatus.PLAYING;
     game.currentRound = 1;
     game.currentDrawerUserId = firstDrawer.userId;
+    game.usedDrawers = [firstDrawer.userId]; // Initialize used drawers list
     // Don't set word yet - drawer will select topic first
 
     await this.gameRepository.save(game);
@@ -307,7 +308,7 @@ export class GameService {
     }
 
     const isCorrect = guess.toLowerCase().trim() === game.currentWord.toLowerCase().trim();
-    
+
     let funnyResponse = '';
     if (!isCorrect) {
       funnyResponse = await this.llmService.generateFunnyResponse(guess, game.currentWord);
@@ -350,27 +351,54 @@ export class GameService {
 
     // Get active players
     const activePlayers = game.players.filter(p => p.isActive);
-    
+
     if (activePlayers.length < 2) {
       throw new BadRequestException('Need at least 2 active players');
     }
 
-    // Find current drawer index
-    const currentDrawerIndex = activePlayers.findIndex(p => p.userId === game.currentDrawerUserId);
-    
-    // Select next drawer (circular rotation)
-    const nextDrawerIndex = (currentDrawerIndex + 1) % activePlayers.length;
-    const nextDrawer = activePlayers[nextDrawerIndex];
+    const usedDrawers = game.usedDrawers || [];
+
+    // Find players who haven't been drawers yet
+    const unusedDrawers = activePlayers.filter(p => !usedDrawers.includes(p.userId));
+
+    let nextDrawer;
+
+    if (unusedDrawers.length > 0) {
+      // Select from unused drawers first
+      const randomIndex = Math.floor(Math.random() * unusedDrawers.length);
+      nextDrawer = unusedDrawers[randomIndex];
+    } else {
+      // All players have been drawers, reset the cycle and exclude current drawer
+      const availableDrawers = activePlayers.filter(p => p.userId !== game.currentDrawerUserId);
+
+      if (availableDrawers.length === 0) {
+        // Only one player, they have to be drawer again
+        nextDrawer = activePlayers[0];
+        game.usedDrawers = [nextDrawer.userId];
+      } else {
+        // Reset used drawers and select from available ones
+        const randomIndex = Math.floor(Math.random() * availableDrawers.length);
+        nextDrawer = availableDrawers[randomIndex];
+        game.usedDrawers = [nextDrawer.userId];
+      }
+    }
+
+    // Add the new drawer to used drawers list if not resetting
+    if (unusedDrawers.length > 0) {
+      game.usedDrawers = [...usedDrawers, nextDrawer.userId];
+    }
 
     // Increment round and update game with new drawer
+    const previousDrawerUserId = game.currentDrawerUserId;
     game.currentRound += 1;
     game.currentDrawerUserId = nextDrawer.userId;
     game.currentWord = null; // Clear previous word
     game.wordLength = null; // Clear previous word length
+    game.correctGuessers = []; // Reset correct guessers for new round
     await this.gameRepository.save(game);
 
     return {
-      previousDrawerUserId: activePlayers[currentDrawerIndex]?.userId,
+      previousDrawerUserId,
       currentDrawerUserId: nextDrawer.userId,
       drawerName: nextDrawer.name,
       totalActivePlayers: activePlayers.length,
@@ -390,7 +418,7 @@ export class GameService {
 
     // Get active players excluding current drawer (if any)
     const activePlayers = game.players.filter(p => p.isActive && p.userId !== game.currentDrawerUserId);
-    
+
     if (activePlayers.length === 0) {
       // If no other players, include current drawer
       const allActivePlayers = game.players.filter(p => p.isActive);
@@ -433,7 +461,7 @@ export class GameService {
 
     // Get active players
     const activePlayers = game.players.filter(p => p.isActive);
-    
+
     if (activePlayers.length < 2) {
       throw new BadRequestException('Need at least 2 active players');
     }
@@ -477,27 +505,11 @@ export class GameService {
     };
   }
 
+
+
   async endRound(roomId: string) {
-    const game = await this.gameRepository.findOne({
-      where: { roomId },
-      relations: ['players'],
-    });
-
-    if (!game) {
-      throw new NotFoundException('Game not found');
-    }
-
-    if (game.status !== GameStatus.PLAYING) {
-      throw new BadRequestException('Game is not in playing state');
-    }
-
-    // Check if this was the last round
-    if (game.currentRound >= game.numRounds) {
-      return this.endGame(roomId);
-    }
-
-    // Otherwise, start next round
-    return this.startNextRound(roomId);
+    // This method is kept for API compatibility but logic is handled in gateway
+    return { success: true };
   }
 
   async endGame(roomId: string) {
@@ -515,7 +527,7 @@ export class GameService {
     await this.gameRepository.save(game);
 
     // Find winner (player with highest score)
-    const winner = game.players.reduce((prev, current) => 
+    const winner = game.players.reduce((prev, current) =>
       (prev.score > current.score) ? prev : current
     );
 
@@ -579,7 +591,7 @@ export class GameService {
     }
 
     const wasHost = player.isHost;
-    
+
     // Remove the player
     await this.playerRepository.remove(player);
 
@@ -593,7 +605,7 @@ export class GameService {
         // Pick a random player to be the new host
         const randomIndex = Math.floor(Math.random() * remainingPlayers.length);
         const newHost = remainingPlayers[randomIndex];
-        
+
         // Update the new host
         newHost.isHost = true;
         await this.playerRepository.save(newHost);
