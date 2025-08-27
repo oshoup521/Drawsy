@@ -11,10 +11,22 @@ import VerticalColorPalette from '../components/VerticalColorPalette';
 import GameFlow from '../components/GameFlow';
 import CompactTimer from '../components/CompactTimer';
 import WinnerPodium from '../components/WinnerPodium';
+import SoundControls from '../components/SoundControls';
 import { useGameStore, useIsCurrentUserDrawer } from '../store/gameStore';
 import { gameApi } from '../services/api';
 import socketService from '../services/socket';
 import { celebrateWinner } from '../utils/confetti';
+import { 
+  playLobbyMessageSound, 
+  playGameMessageSound, 
+  playCorrectGuessSound, 
+  playWrongGuessSound, 
+  playWinnerCelebrationSound,
+  playGameStartSound,
+  playRoundStartSound,
+  playPlayerJoinSound,
+  playPlayerLeaveSound 
+} from '../utils/sounds';
 
 const GameRoom: React.FC = () => {
   const { roomId } = useParams<{ roomId: string }>();
@@ -175,6 +187,9 @@ const GameRoom: React.FC = () => {
         isAI: true,
         timestamp: Date.now(),
       });
+
+      // Play join sound
+      playPlayerJoinSound();
     };
 
     const handlePlayerLeft = (data: any) => {
@@ -198,6 +213,8 @@ const GameRoom: React.FC = () => {
               isAI: true,
               timestamp: Date.now(),
             });
+            // Play leave sound
+            playPlayerLeaveSound();
           }
         }, 2000); // Wait 2 seconds to see if they reconnect
       }
@@ -278,6 +295,9 @@ const GameRoom: React.FC = () => {
         timestamp: Date.now(),
       });
 
+      // Play game start sound
+      playGameStartSound();
+
       toast.success(`Game started! ${data.drawerName} is the drawer.`);
     };
 
@@ -290,6 +310,13 @@ const GameRoom: React.FC = () => {
         isAI: data.isAI || false,
         timestamp: Date.now(),
       });
+
+      // Play appropriate chat sound based on game state
+      if (gameState?.status === 'waiting') {
+        playLobbyMessageSound();
+      } else {
+        playGameMessageSound();
+      }
     };
 
     // Guess result events
@@ -311,6 +338,9 @@ const GameRoom: React.FC = () => {
       if (data.correct) {
         // Celebrate with confetti!
         celebrateWinner();
+        
+        // Play correct guess sound
+        playCorrectGuessSound();
         
         // Update the player's score in the game state
         updatePlayer({
@@ -338,6 +368,9 @@ const GameRoom: React.FC = () => {
         // Show toast notification
         toast.success(`🎯 ${data.playerName} got it right! +${data.scoreAwarded} points!`);
       } else {
+        // Play wrong guess sound
+        playWrongGuessSound();
+        
         // Add incorrect guess message with red background and funny AI response
         addChatMessage({
           userId: 'system',
@@ -354,6 +387,9 @@ const GameRoom: React.FC = () => {
     // Round started event - activate timer
     const handleRoundStarted = (data: any) => {
       setTimerActive(true);
+      
+      // Play round start sound
+      playRoundStartSound();
       
       updateGameState((prev) => prev ? {
         ...prev,
@@ -416,6 +452,9 @@ const GameRoom: React.FC = () => {
         isAI: true,
         timestamp: Date.now(),
       });
+
+      // Play winner celebration sound
+      playWinnerCelebrationSound();
 
       // Show winner podium after a brief delay
       setTimeout(() => {
@@ -645,6 +684,7 @@ const GameRoom: React.FC = () => {
                 <span className="text-white/60">Waiting for the host to start the game...</span>
               )
             )}
+            <SoundControls />
             <button
               onClick={handleLeaveRoom}
               className="btn-secondary"
@@ -790,6 +830,7 @@ const GameRoom: React.FC = () => {
               onTick={handleTimerTick}
             />
           )}
+          <SoundControls />
           <button
             onClick={handleLeaveRoom}
             className="btn-secondary"

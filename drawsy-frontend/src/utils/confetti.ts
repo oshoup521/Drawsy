@@ -1,7 +1,11 @@
 import confetti from 'canvas-confetti';
+import { playCorrectGuessSound, playWinnerCelebrationSound } from './sounds';
 
 // Winner celebration confetti
 export const celebrateWinner = () => {
+  // Play celebration sound
+  playCorrectGuessSound();
+  
   // Burst from center
   confetti({
     particleCount: 100,
@@ -31,6 +35,9 @@ export const celebrateWinner = () => {
 
 // Podium celebration - more dramatic
 export const celebratePodium = () => {
+  // Play winner celebration sound
+  playWinnerCelebrationSound();
+  
   // Create a custom canvas with higher z-index
   const canvas = document.createElement('canvas');
   canvas.style.position = 'fixed';

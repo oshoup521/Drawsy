@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import HomePage from './pages/HomePage';
 import GameRoom from './pages/GameRoom';
 import JoinRoom from './pages/JoinRoom';
+import SoundTest from './pages/SoundTest';
 import ConfettiTest from './components/ConfettiTest';
 import './App.css';
 
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/join" element={<JoinRoom />} />
           <Route path="/room/:roomId" element={<GameRoom />} />
+          <Route path="/sound-test" element={<SoundTest />} />
           <Route path="/confetti-test" element={<ConfettiTest />} />
         </Routes>
         

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Drawsy Sound Effects</title>
+</head>
+<body>
+    <h1>Drawsy Sound Generator</h1>
+    <p>Click the buttons below to generate and download sound effects for your game:</p>
+    
+    <div style="margin: 20px 0;">
+        <button onclick="generateSound('lobby-message', 'notification')">Generate Lobby Message Sound</button>
+        <button onclick="generateSound('game-message', 'notification')">Generate Game Message Sound</button>
+        <button onclick="generateSound('correct-guess', 'success')">Generate Correct Guess Sound</button>
+        <button onclick="generateSound('wrong-guess', 'error')">Generate Wrong Guess Sound</button>
+        <button onclick="generateSound('winner-celebration', 'celebration')">Generate Winner Celebration</button>
+        <button onclick="generateSound('game-start', 'fanfare')">Generate Game Start Sound</button>
+        <button onclick="generateSound('round-start', 'bell')">Generate Round Start Sound</button>
+        <button onclick="generateSound('time-warning', 'warning')">Generate Time Warning Sound</button>
+        <button onclick="generateSound('player-join', 'join')">Generate Player Join Sound</button>
+        <button onclick="generateSound('player-leave', 'leave')">Generate Player Leave Sound</button>
+    </div>
+
+    <script>
+        function generateSound(filename, type) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const sampleRate = audioContext.sampleRate;
+            let duration, frequencies, pattern;
+
+            switch(type) {
+                case 'notification':
+                    duration = 0.3;
+                    frequencies = [800, 1000];
+                    pattern = 'beep';
+                    break;
+                case 'success':
+                    duration = 0.8;
+                    frequencies = [523, 659, 784]; // C, E, G major chord
+                    pattern = 'chord';
+                    break;
+                case 'error':
+                    duration = 0.5;
+                    frequencies = [300, 250];
+                    pattern = 'descending';
+                    break;
+                case 'celebration':
+                    duration = 2.0;
+                    frequencies = [523, 659, 784, 1047]; // C major scale up
+                    pattern = 'celebration';
+                    break;
+                case 'fanfare':
+                    duration = 1.5;
+                    frequencies = [523, 659, 784, 1047];
+                    pattern = 'fanfare';
+                    break;
+                case 'bell':
+                    duration = 0.4;
+                    frequencies = [1000];
+                    pattern = 'bell';
+                    break;
+                case 'warning':
+                    duration = 0.6;
+                    frequencies = [800, 600];
+                    pattern = 'warning';
+                    break;
+                case 'join':
+                    duration = 0.4;
+                    frequencies = [600, 800];
+                    pattern = 'ascending';
+                    break;
+                case 'leave':
+                    duration = 0.4;
+                    frequencies = [800, 600];
+                    pattern = 'descending';
+                    break;
+            }
+
+            const buffer = audioContext.createBuffer(1, duration * sampleRate, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < data.length; i++) {
+                const t = i / sampleRate;
+                let sample = 0;
+
+                switch(pattern) {
+                    case 'beep':
+                        sample = Math.sin(2 * Math.PI * frequencies[0] * t) * 0.3 * Math.exp(-t * 3);
+                        break;
+                    case 'chord':
+                        frequencies.forEach(freq => {
+                            sample += Math.sin(2 * Math.PI * freq * t) * 0.2;
+                        });
+                        sample *= Math.exp(-t * 2);
+                        break;
+                    case 'descending':
+                        const freq = frequencies[0] + (frequencies[1] - frequencies[0]) * (t / duration);
+                        sample = Math.sin(2 * Math.PI * freq * t) * 0.3 * Math.exp(-t * 4);
+                        break;
+                    case 'ascending':
+                        const freqAsc = frequencies[0] + (frequencies[1] - frequencies[0]) * (t / duration);
+                        sample = Math.sin(2 * Math.PI * freqAsc * t) * 0.3 * Math.exp(-t * 4);
+                        break;
+                    case 'celebration':
+                        const noteIndex = Math.floor(t * 4) % frequencies.length;
+                        sample = Math.sin(2 * Math.PI * frequencies[noteIndex] * t * 2) * 0.3 * Math.sin(t * Math.PI / duration);
+                        break;
+                    case 'fanfare':
+                        frequencies.forEach((freq, index) => {
+                            if (t > index * 0.2 && t < (index + 1) * 0.4) {
+                                sample += Math.sin(2 * Math.PI * freq * t) * 0.2;
+                            }
+                        });
+                        sample *= Math.exp(-t * 1);
+                        break;
+                    case 'bell':
+                        sample = Math.sin(2 * Math.PI * frequencies[0] * t) * 0.3 * Math.exp(-t * 5);
+                        sample += Math.sin(2 * Math.PI * frequencies[0] * 2 * t) * 0.1 * Math.exp(-t * 8);
+                        break;
+                    case 'warning':
+                        const warningFreq = t < duration/2 ? frequencies[0] : frequencies[1];
+                        sample = Math.sin(2 * Math.PI * warningFreq * t) * 0.3 * Math.exp(-t * 2);
+                        break;
+                }
+
+                data[i] = sample;
+            }
+
+            // Convert to WAV and download
+            const wav = audioBufferToWav(buffer);
+            const blob = new Blob([wav], { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename + '.wav';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+        }
+
+        function audioBufferToWav(buffer) {
+            const length = buffer.length;
+            const arrayBuffer = new ArrayBuffer(44 + length * 2);
+            const view = new DataView(arrayBuffer);
+            const sampleRate = buffer.sampleRate;
+            
+            // WAV header
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+            
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, length * 2, true);
+            
+            // Convert float samples to 16-bit PCM
+            const data = buffer.getChannelData(0);
+            let offset = 44;
+            for (let i = 0; i < length; i++) {
+                const sample = Math.max(-1, Math.min(1, data[i]));
+                view.setInt16(offset, sample * 0x7FFF, true);
+                offset += 2;
+            }
+            
+            return arrayBuffer;
+        }
+    </script>
+</body>
+</html>
