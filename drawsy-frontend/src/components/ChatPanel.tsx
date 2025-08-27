@@ -83,10 +83,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
 
   return (
     <div className={`h-full flex flex-col ${className}`}>
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-4 flex-shrink-0">
-        <h3 className="text-white font-semibold">💬 Chat</h3>
-      </div>
+
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto mb-4 min-h-0">
@@ -162,61 +159,34 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
           <AnimatePresence>
             {aiSuggestions.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-2 p-3 bg-gradient-to-r from-purple-500/20 to-blue-500/20 rounded-lg border border-purple-400/30"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-2 p-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-lg border border-emerald-400/40"
               >
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-xs text-purple-300 font-semibold">🤖 AI Suggestions:</span>
-                  <span className="text-xs text-white/50">(Click to use)</span>
-                </div>
-                <div className="ai-suggestions-container">
-                  <div className="space-y-2">
-                    {aiSuggestions.map((suggestion, index) => (
-                      <motion.button
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className="w-full text-left p-2 bg-white/10 hover:bg-white/20 rounded text-white/90 text-sm transition-colors border border-white/10 hover:border-purple-400/50"
-                      >
-                        💬 {suggestion}
-                      </motion.button>
-                    ))}
-                  </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-emerald-300 font-semibold whitespace-nowrap">🤖 AI Suggestion:</span>
+                  {aiSuggestions.map((suggestion, index) => (
+                    <motion.button
+                      key={index}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: index * 0.1 }}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="inline-flex items-center px-2 py-1 bg-emerald-500/30 hover:bg-emerald-500/50 rounded-md text-white text-sm transition-colors border border-emerald-400/50 hover:border-emerald-300"
+                      title="Click to use this suggestion"
+                    >
+                      {suggestion}
+                    </motion.button>
+                  ))}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Quick Actions */}
-          <div className="chat-quick-actions">
-            <button
-              onClick={() => handleSuggestionClick('Nice drawing!')}
-              className="chat-quick-button"
-            >
-              👍 Nice!
-            </button>
-            <button
-              onClick={() => handleSuggestionClick('What is this?')}
-              className="chat-quick-button"
-            >
-              🤔 What?
-            </button>
-            <button
-              onClick={() => handleSuggestionClick('Hard to guess!')}
-              className="chat-quick-button"
-            >
-              😅 Hard!
-            </button>
-          </div>
 
-          {/* Typing Indicator */}
-          <div className="chat-tip">
-            💡 Tip: Use the chat to talk with other players and get AI suggestions!
-          </div>
+
+
         </div>
       </div>
     </div>
