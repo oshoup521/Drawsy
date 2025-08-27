@@ -277,7 +277,7 @@ const GameRoom: React.FC = () => {
         timestamp: Date.now(),
       });
 
-      toast.success(`Game started! ${data.drawerName} is the first drawer.`);
+      toast.success(`Game started! ${data.drawerName} is the drawer.`);
     };
 
     // Chat events
