@@ -87,8 +87,8 @@ export class LLMService {
       this.logger.debug(`Calling LLM service at: ${this.llmServiceUrl}/generate-chat-suggestions`);
       const response = await axios.post(`${this.llmServiceUrl}/generate-chat-suggestions`, {
         message,
-        count: 3,
-        moods: ['encouraging', 'curious', 'playful']
+        count: 2,
+        moods: ['encouraging', 'curious']
       }, {
         timeout: 10000, // 10 second timeout
         headers: {

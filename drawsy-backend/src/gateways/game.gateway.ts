@@ -357,6 +357,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         aiSuggestions = await this.llmService.generateChatSuggestion(
           data.message,
         );
+        // Only take first 2 suggestions to keep UI minimal
+        aiSuggestions = aiSuggestions.slice(0, 2);
         console.log('AI suggestions generated:', aiSuggestions);
       } catch (error) {
         console.error('Failed to generate AI suggestions:', error);

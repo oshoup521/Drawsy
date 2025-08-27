@@ -155,40 +155,44 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
             </button>
           </div>
 
-          {/* AI Suggestions */}
+          {/* AI Suggestions - Minimal */}
           <AnimatePresence>
             {aiSuggestions.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="mt-2 p-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-lg border border-emerald-400/40"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10"
               >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm text-emerald-300 font-semibold whitespace-nowrap">🤖 AI Suggestions:</span>
-                  {aiSuggestions.map((suggestion, index) => {
-                    const moodStyles = [
-                      { emoji: '💚', bg: 'bg-green-500/30 hover:bg-green-500/50', border: 'border-green-400/50 hover:border-green-300', title: 'Encouraging' },
-                      { emoji: '🤔', bg: 'bg-blue-500/30 hover:bg-blue-500/50', border: 'border-blue-400/50 hover:border-blue-300', title: 'Curious' },
-                      { emoji: '🎉', bg: 'bg-purple-500/30 hover:bg-purple-500/50', border: 'border-purple-400/50 hover:border-purple-300', title: 'Playful' }
-                    ];
-                    const mood = moodStyles[index] || moodStyles[0];
-                    
-                    return (
-                      <motion.button
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: index * 0.1 }}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className={`inline-flex items-center gap-1 px-2 py-1 ${mood.bg} rounded-md text-white text-sm transition-colors border ${mood.border}`}
-                        title={`${mood.title} suggestion - Click to use`}
-                      >
-                        <span>{mood.emoji}</span>
-                        <span>{suggestion}</span>
-                      </motion.button>
-                    );
-                  })}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/60 font-medium flex items-center gap-1">
+                    <span className="text-xs">🤖</span>
+                    AI:
+                  </span>
+                  <div className="flex gap-2 flex-1">
+                    {aiSuggestions.slice(0, 2).map((suggestion, index) => {
+                      const moodStyles = [
+                        { emoji: '💚', bg: 'bg-emerald-500/20 hover:bg-emerald-500/30', border: 'border-emerald-500/30' },
+                        { emoji: '🤔', bg: 'bg-blue-500/20 hover:bg-blue-500/30', border: 'border-blue-500/30' }
+                      ];
+                      const mood = moodStyles[index] || moodStyles[0];
+                      
+                      return (
+                        <motion.button
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: index * 0.05 }}
+                          onClick={() => handleSuggestionClick(suggestion)}
+                          className={`flex-1 flex items-center gap-1 px-2 py-1 ${mood.bg} rounded border ${mood.border} text-white/90 text-xs hover:text-white transition-all duration-150 hover:scale-[1.02]`}
+                          title="Click to use this suggestion"
+                        >
+                          <span className="text-xs">{mood.emoji}</span>
+                          <span className="truncate">{suggestion}</span>
+                        </motion.button>
+                      );
+                    })}
+                  </div>
                 </div>
               </motion.div>
             )}
