@@ -1,5 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
+import { Stage, Layer, Line } from 'react-konva';
+import Konva from 'konva';
 import { DrawingData } from '../types/game';
 import { useGameStore, useCurrentUser, useCurrentDrawer } from '../store/gameStore';
 import socketService from '../services/socket';
@@ -10,15 +12,22 @@ interface DrawingCanvasProps {
   disabled?: boolean;
 }
 
+interface KonvaLine {
+  id: string;
+  points: number[];
+  stroke: string;
+  strokeWidth: number;
+}
+
 const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
-  width = 800,
-  height = 500,
+  width = 600,
+  height = 400,
   disabled = false,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<Konva.Stage>(null);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
-  const [currentStrokeId, setCurrentStrokeId] = useState<string | null>(null);
+  const [lines, setLines] = useState<KonvaLine[]>([]);
+  const [currentLine, setCurrentLine] = useState<KonvaLine | null>(null);
 
   const {
     currentWord,
@@ -31,182 +40,46 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const currentDrawer = useCurrentDrawer();
   const isCurrentUserDrawer = currentUser?.userId === currentDrawer?.userId;
 
-  // Store all drawing data for complete redraw approach
-  const allDrawingData = useRef<DrawingData[]>([]);
-  
-  // Simple function to redraw entire canvas from scratch
-  const redrawCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Clear canvas
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
-
-    // Group drawing data by strokeId and sort by order within each stroke
-    const strokeGroups = new Map<string, DrawingData[]>();
-    
-    allDrawingData.current.forEach(data => {
-      const strokeId = data.strokeId || `fallback-${data.x}-${data.y}`;
-      if (!strokeGroups.has(strokeId)) {
-        strokeGroups.set(strokeId, []);
-      }
-      strokeGroups.get(strokeId)!.push(data);
-    });
-
-    // Draw each stroke completely
-    strokeGroups.forEach((strokeData, strokeId) => {
-      if (strokeData.length === 0) return;
-      
-      // Separate start point and continuation points
-      const startPoint = strokeData.find(point => point.isDrawing === false);
-      const continuePoints = strokeData.filter(point => point.isDrawing === true);
-
-      if (!startPoint) {
-        // No start point found, use the first point as start point
-        if (continuePoints.length > 0) {
-          const firstPoint = continuePoints[0];
-          const remainingPoints = continuePoints.slice(1);
-          
-          // Set up drawing style
-          ctx.strokeStyle = firstPoint.color;
-          ctx.lineWidth = firstPoint.lineWidth;
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-
-          if (remainingPoints.length === 0) {
-            // Just a single point/dot
-            ctx.beginPath();
-            ctx.arc(firstPoint.x, firstPoint.y, firstPoint.lineWidth / 2, 0, 2 * Math.PI);
-            ctx.fillStyle = firstPoint.color;
-            ctx.fill();
-          } else {
-            // Draw the stroke starting from first point
-            ctx.beginPath();
-            ctx.moveTo(firstPoint.x, firstPoint.y);
-            
-            remainingPoints.forEach(point => {
-              ctx.lineTo(point.x, point.y);
-            });
-            
-            ctx.stroke();
-          }
-        }
-        return;
-      }
-
-      // Set up drawing style
-      ctx.strokeStyle = startPoint.color;
-      ctx.lineWidth = startPoint.lineWidth;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      if (continuePoints.length === 0) {
-        // Just a single point/dot - draw a small circle
-        ctx.beginPath();
-        ctx.arc(startPoint.x, startPoint.y, startPoint.lineWidth / 2, 0, 2 * Math.PI);
-        ctx.fillStyle = startPoint.color;
-        ctx.fill();
-      } else {
-        // Draw the complete stroke as a continuous path
-        ctx.beginPath();
-        ctx.moveTo(startPoint.x, startPoint.y);
-        
-        // Draw lines to each continuation point
-        continuePoints.forEach(point => {
-          ctx.lineTo(point.x, point.y);
-        });
-        
-        ctx.stroke();
-      }
-    });
-  }, [width, height]);
-
-  // Local drawing function (for real-time drawing by current user)
-  const drawLocal = useCallback((data: DrawingData) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.strokeStyle = data.color;
-    ctx.lineWidth = data.lineWidth;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    if (data.isDrawing === false) {
-      // Start new stroke - begin path and move to starting point
-      ctx.beginPath();
-      ctx.moveTo(data.x, data.y);
-    } else {
-      // Continue stroke - draw line to current point
-      ctx.lineTo(data.x, data.y);
-      ctx.stroke();
-    }
-  }, []);
-
   // Clear canvas
   const clearCanvas = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
-    
-    // Clear all drawing data
-    allDrawingData.current = [];
-  }, [width, height]);
-
-  // Initialize canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Set canvas properties
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.imageSmoothingEnabled = true;
-
-    // Clear canvas
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, width, height);
-  }, [width, height]);
+    setLines([]);
+    setCurrentLine(null);
+  }, []);
 
   // Listen for drawing data from other players
   useEffect(() => {
     const handleDrawingData = (data: DrawingData) => {
       console.log('Received drawing data:', data);
-      
-      // Check for duplicates to prevent duplicate drawing data
-      const isDuplicate = allDrawingData.current.some(existing => 
-        existing.x === data.x && 
-        existing.y === data.y && 
-        existing.strokeId === data.strokeId && 
-        existing.isDrawing === data.isDrawing
-      );
-      
-      if (isDuplicate) {
-        console.log('Duplicate data detected, skipping:', data);
-        return;
+
+      if (data.isDrawing === false) {
+        // Start new line
+        const newLine: KonvaLine = {
+          id: data.strokeId || `${Date.now()}-${Math.random()}`,
+          points: [data.x, data.y],
+          stroke: data.color,
+          strokeWidth: data.lineWidth,
+        };
+        setCurrentLine(newLine);
+      } else if (data.isDrawing === true) {
+        // Continue current line
+        setCurrentLine(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            points: [...prev.points, data.x, data.y]
+          };
+        });
+      } else {
+        // End of stroke (isDrawing is undefined or null)
+        setCurrentLine(prev => {
+          if (prev) {
+            // Add the completed line to the lines array
+            setLines(prevLines => [...prevLines, prev]);
+          }
+          return null;
+        });
       }
-      
-      // Add to our drawing data collection
-      allDrawingData.current.push(data);
-      
-      // Redraw entire canvas to ensure consistency
-      redrawCanvas();
-      
-      // Also add to store
+
       addDrawingData(data);
     };
 
@@ -215,11 +88,48 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     };
 
     const handleDrawingDataLoaded = (drawingDataArray: DrawingData[]) => {
-      // Set all drawing data and redraw
-      allDrawingData.current = [...drawingDataArray];
-      redrawCanvas();
-      
-      // Add to store
+      // Convert drawing data to Konva lines
+      const strokeGroups = new Map<string, DrawingData[]>();
+
+      drawingDataArray.forEach(data => {
+        const strokeId = data.strokeId || `fallback-${data.x}-${data.y}`;
+        if (!strokeGroups.has(strokeId)) {
+          strokeGroups.set(strokeId, []);
+        }
+        strokeGroups.get(strokeId)!.push(data);
+      });
+
+      const konvaLines: KonvaLine[] = [];
+      strokeGroups.forEach((strokeData, strokeId) => {
+        if (strokeData.length === 0) return;
+
+        const sortedData = strokeData.sort((a, b) => {
+          if (a.isDrawing === false && b.isDrawing === true) return -1;
+          if (a.isDrawing === true && b.isDrawing === false) return 1;
+          return 0;
+        });
+
+        const points: number[] = [];
+        let stroke = '#000000';
+        let strokeWidth = 2;
+
+        sortedData.forEach(data => {
+          points.push(data.x, data.y);
+          stroke = data.color;
+          strokeWidth = data.lineWidth;
+        });
+
+        if (points.length >= 2) {
+          konvaLines.push({
+            id: strokeId,
+            points,
+            stroke,
+            strokeWidth
+          });
+        }
+      });
+
+      setLines(konvaLines);
       drawingDataArray.forEach(data => addDrawingData(data));
     };
 
@@ -235,106 +145,84 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       // socketService.removeAllListeners(); 
       // For now, we'll let the parent component handle cleanup
     };
-  }, [addDrawingData, clearCanvas, redrawCanvas]);
-
-  // Get mouse/touch position relative to canvas
-  const getEventPosition = useCallback((event: React.MouseEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    let clientX: number;
-    let clientY: number;
-
-    if ('touches' in event) {
-      // Touch event
-      const touch = event.touches[0] || event.changedTouches[0];
-      clientX = touch.clientX;
-      clientY = touch.clientY;
-    } else {
-      // Mouse event
-      clientX = event.clientX;
-      clientY = event.clientY;
-    }
-
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
-    };
-  }, []);
+  }, [addDrawingData, clearCanvas]);
 
   // Start drawing
-  const startDrawing = useCallback((event: React.MouseEvent | React.TouchEvent) => {
+  const handleMouseDown = useCallback((e: any) => {
     if (disabled) return;
 
-    event.preventDefault();
     setIsDrawing(true);
+    const pos = e.target.getStage().getPointerPosition();
 
-    const point = getEventPosition(event);
-    setLastPoint(point);
-
-    // Generate unique stroke ID
     const strokeId = `${Date.now()}-${Math.random()}`;
-    setCurrentStrokeId(strokeId);
+    const newLine: KonvaLine = {
+      id: strokeId,
+      points: [pos.x, pos.y],
+      stroke: currentDrawingColor,
+      strokeWidth: currentBrushSize,
+    };
+
+    setCurrentLine(newLine);
 
     const drawingData: DrawingData = {
-      x: point.x,
-      y: point.y,
+      x: pos.x,
+      y: pos.y,
       color: currentDrawingColor,
       lineWidth: currentBrushSize,
       strokeId: strokeId,
       isDrawing: false,
     };
 
-
-
-    // For local drawing, draw immediately and add to our data
-    drawLocal(drawingData);
-    allDrawingData.current.push(drawingData);
-    
-    // Send to other players
     socketService.sendDrawingData(drawingData);
     addDrawingData(drawingData);
-  }, [disabled, getEventPosition, currentDrawingColor, currentBrushSize, drawLocal, addDrawingData]);
+  }, [disabled, currentDrawingColor, currentBrushSize, addDrawingData]);
 
   // Continue drawing
-  const continueDrawing = useCallback((event: React.MouseEvent | React.TouchEvent) => {
-    if (!isDrawing || disabled || !currentStrokeId) return;
+  const handleMouseMove = useCallback((e: any) => {
+    if (!isDrawing || disabled || !currentLine) return;
 
-    event.preventDefault();
-    const point = getEventPosition(event);
+    const stage = e.target.getStage();
+    const point = stage.getPointerPosition();
 
-    if (lastPoint) {
-      const drawingData: DrawingData = {
-        x: point.x,
-        y: point.y,
-        color: currentDrawingColor,
-        lineWidth: currentBrushSize,
-        strokeId: currentStrokeId,
-        isDrawing: true,
-      };
+    const newLine = {
+      ...currentLine,
+      points: [...currentLine.points, point.x, point.y]
+    };
+    setCurrentLine(newLine);
 
-      // For local drawing, draw immediately and add to our data
-      drawLocal(drawingData);
-      allDrawingData.current.push(drawingData);
-      
-      // Send to other players
-      socketService.sendDrawingData(drawingData);
-      addDrawingData(drawingData);
-    }
+    const drawingData: DrawingData = {
+      x: point.x,
+      y: point.y,
+      color: currentDrawingColor,
+      lineWidth: currentBrushSize,
+      strokeId: currentLine.id,
+      isDrawing: true,
+    };
 
-    setLastPoint(point);
-  }, [isDrawing, disabled, getEventPosition, lastPoint, currentDrawingColor, currentBrushSize, currentStrokeId, drawLocal, addDrawingData]);
+    socketService.sendDrawingData(drawingData);
+    addDrawingData(drawingData);
+  }, [isDrawing, disabled, currentLine, currentDrawingColor, currentBrushSize, addDrawingData]);
 
   // Stop drawing
-  const stopDrawing = useCallback(() => {
+  const handleMouseUp = useCallback(() => {
+    if (!isDrawing || !currentLine) return;
+
     setIsDrawing(false);
-    setLastPoint(null);
-    setCurrentStrokeId(null);
-  }, []);
+    setLines(prev => [...prev, currentLine]);
+    setCurrentLine(null);
+
+    // Send end of stroke signal
+    const endStrokeData: DrawingData = {
+      x: 0,
+      y: 0,
+      color: currentDrawingColor,
+      lineWidth: currentBrushSize,
+      strokeId: currentLine.id,
+      isDrawing: undefined, // This signals end of stroke
+    };
+
+    socketService.sendDrawingData(endStrokeData);
+  }, [isDrawing, currentLine, currentDrawingColor, currentBrushSize]);
 
   // Clear canvas and broadcast to all players
   const handleClearCanvas = useCallback(() => {
@@ -343,67 +231,102 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [clearCanvas]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Word Display for Drawer */}
       {isCurrentUserDrawer && currentWord && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-4 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-xl border-2 border-green-400/50 flex-shrink-0 shadow-lg backdrop-blur-sm"
+          className="flex-shrink-0 mx-auto mb-3 p-3 bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-xl border-2 border-green-400/50 shadow-lg backdrop-blur-sm max-w-md"
           style={{ zIndex: 10 }}
         >
           <div className="text-center">
-            <div className="text-white/90 text-sm mb-2 font-medium">🎯 Your word to draw:</div>
-            <div className="text-2xl font-bold text-white tracking-wider drop-shadow-lg">
+            <div className="text-white/90 text-xs mb-1 font-medium">🎯 Your word to draw:</div>
+            <div className="text-xl font-bold text-white tracking-wider drop-shadow-lg">
               {currentWord.toUpperCase()}
             </div>
-            <div className="text-white/70 text-sm mt-2">
+            <div className="text-white/70 text-xs mt-1">
               Draw this so others can guess it!
             </div>
           </div>
         </motion.div>
       )}
 
-      {/* Canvas Container - Now takes up all remaining space */}
-      <div className="flex-1 flex items-center justify-center relative min-h-0">
-        <motion.canvas
-          ref={canvasRef}
-          width={width}
-          height={height}
-          className={`drawing-canvas ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          onMouseDown={startDrawing}
-          onMouseMove={continueDrawing}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={continueDrawing}
-          onTouchEnd={stopDrawing}
+      {/* Canvas Container - Responsive */}
+      <div className="flex-1 flex items-center justify-center p-4 min-h-0">
+        <div
+          className="relative bg-white rounded-lg border border-gray-300 shadow-lg max-w-full max-h-full"
           style={{
-            maxWidth: '100%',
-            maxHeight: '100%',
-            width: 'auto',
-            height: 'auto',
-            aspectRatio: `${width}/${height}`,
+            width: `min(${width}px, 100%)`,
+            height: `min(${height}px, 100%)`,
+            aspectRatio: `${width}/${height}`
           }}
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-        />
-
-        {/* Floating Clear Button - Top Right Corner */}
-        {!disabled && (
-          <motion.button
-            initial={{ opacity: 0, scale: 0.8 }}
+        >
+          <motion.div
+            className={`w-full h-full ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5 }}
-            onClick={handleClearCanvas}
-            className="absolute top-3 right-3 w-8 h-8 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-sm transition-all hover:scale-110 z-10 backdrop-blur-sm border border-white/20 shadow-lg"
-            disabled={disabled}
-            title="Clear canvas for all players"
+            transition={{ delay: 0.3 }}
           >
-            🗑️
-          </motion.button>
-        )}
+            <Stage
+              width={width}
+              height={height}
+              onMouseDown={handleMouseDown}
+              onMousemove={handleMouseMove}
+              onMouseup={handleMouseUp}
+              onTouchStart={handleMouseDown}
+              onTouchMove={handleMouseMove}
+              onTouchEnd={handleMouseUp}
+              ref={stageRef}
+              className="drawing-canvas rounded-lg bg-white w-full h-full"
+              scaleX={1}
+              scaleY={1}
+            >
+              <Layer>
+                {/* Render all completed lines */}
+                {lines.map((line) => (
+                  <Line
+                    key={line.id}
+                    points={line.points}
+                    stroke={line.stroke}
+                    strokeWidth={line.strokeWidth}
+                    tension={0.5}
+                    lineCap="round"
+                    lineJoin="round"
+                    globalCompositeOperation="source-over"
+                  />
+                ))}
+                {/* Render current line being drawn */}
+                {currentLine && (
+                  <Line
+                    points={currentLine.points}
+                    stroke={currentLine.stroke}
+                    strokeWidth={currentLine.strokeWidth}
+                    tension={0.5}
+                    lineCap="round"
+                    lineJoin="round"
+                    globalCompositeOperation="source-over"
+                  />
+                )}
+              </Layer>
+            </Stage>
+          </motion.div>
+
+          {/* Floating Clear Button - Top Right Corner */}
+          {!disabled && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              onClick={handleClearCanvas}
+              className="absolute top-2 right-2 w-7 h-7 bg-red-500/80 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-xs transition-all hover:scale-110 z-10 backdrop-blur-sm border border-white/20 shadow-lg"
+              disabled={disabled}
+              title="Clear canvas for all players"
+            >
+              🗑️
+            </motion.button>
+          )}
+        </div>
       </div>
     </div>
   );
