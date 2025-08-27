@@ -21,14 +21,12 @@ const WordSelectionModal: React.FC<WordSelectionModalProps> = ({
   isLoading = false,
 }) => {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
-  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedWord(null);
-      setShowFallback(aiWords.length === 0);
     }
-  }, [isOpen, aiWords]);
+  }, [isOpen]);
 
   const handleWordClick = (word: string) => {
     setSelectedWord(word);
@@ -42,21 +40,19 @@ const WordSelectionModal: React.FC<WordSelectionModalProps> = ({
   };
 
   const handleRandomWord = () => {
-    const availableWords = showFallback ? fallbackWords : aiWords;
+    // Prioritize AI words, only use fallback if AI words are not available
+    const availableWords = aiWords.length > 0 ? aiWords : fallbackWords;
     if (availableWords.length > 0) {
       const randomWord = availableWords[Math.floor(Math.random() * availableWords.length)];
       setSelectedWord(randomWord);
     }
   };
 
-  const toggleWordSource = () => {
-    setShowFallback(!showFallback);
-    setSelectedWord(null);
-  };
-
-  const displayWords = showFallback ? fallbackWords : aiWords;
+  // Prioritize AI words, only show fallback words when AI words are not available
+  const displayWords = aiWords.length > 0 ? aiWords : fallbackWords;
   const hasAIWords = aiWords.length > 0;
   const hasFallbackWords = fallbackWords.length > 0;
+  const usingFallback = !hasAIWords && hasFallbackWords;
 
   return (
     <AnimatePresence>
@@ -103,43 +99,28 @@ const WordSelectionModal: React.FC<WordSelectionModalProps> = ({
                 </div>
               ) : (
                 <>
-                  {/* Word Source Toggle */}
-                  {hasAIWords && hasFallbackWords && (
-                    <div className="flex items-center justify-center mb-6">
-                      <div className="flex bg-white/10 rounded-lg p-1">
-                        <button
-                          onClick={() => !showFallback || toggleWordSource()}
-                          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                            !showFallback
-                              ? 'bg-green-500 text-white shadow-lg'
-                              : 'text-white/70 hover:text-white'
-                          }`}
-                        >
-                          🤖 AI Suggestions
-                        </button>
-                        <button
-                          onClick={() => showFallback || toggleWordSource()}
-                          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                            showFallback
-                              ? 'bg-blue-500 text-white shadow-lg'
-                              : 'text-white/70 hover:text-white'
-                          }`}
-                        >
-                          📚 Classic Words
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Status Message */}
-                  {!hasAIWords && hasFallbackWords && (
+                  {/* Status Message - Only show when using fallback */}
+                  {usingFallback && (
                     <div className="mb-6 p-4 rounded-xl bg-yellow-500/20 border border-yellow-400/30">
                       <div className="flex items-center space-x-2">
                         <span className="text-yellow-400">⚠️</span>
                         <span className="text-white font-semibold">AI Unavailable</span>
                       </div>
                       <div className="text-white/70 text-sm mt-1">
-                        Using classic word collection instead
+                        Using classic word collection as fallback
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Success Message - Show when AI words are available */}
+                  {hasAIWords && (
+                    <div className="mb-6 p-4 rounded-xl bg-green-500/20 border border-green-400/30">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-green-400">🤖</span>
+                        <span className="text-white font-semibold">AI Suggestions Ready</span>
+                      </div>
+                      <div className="text-white/70 text-sm mt-1">
+                        Fresh AI-generated words for "{topic}"
                       </div>
                     </div>
                   )}
@@ -185,10 +166,12 @@ const WordSelectionModal: React.FC<WordSelectionModalProps> = ({
                     >
                       <div className="flex items-center justify-center space-x-2">
                         <span className="text-2xl">🎲</span>
-                        <span className="text-white font-semibold">Random Word</span>
+                        <span className="text-white font-semibold">
+                          {hasAIWords ? 'Random AI Word' : 'Random Classic Word'}
+                        </span>
                       </div>
                       <div className="text-white/70 text-xs mt-1">
-                        Let chance decide your challenge
+                        {hasAIWords ? 'Let AI surprise you!' : 'Let chance decide your challenge'}
                       </div>
                     </motion.button>
                   )}

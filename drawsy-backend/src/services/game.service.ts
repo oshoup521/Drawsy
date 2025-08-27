@@ -223,12 +223,15 @@ export class GameService {
     // Get words for the selected topic
     const wordsData = await this.llmService.generateWordsByTopic(topic);
 
-    return {
+    // Only return fallback words if AI words are not available
+    const response = {
       topic,
-      aiWords: wordsData.aiWords,
-      fallbackWords: wordsData.fallbackWords,
       drawerUserId: game.currentDrawerUserId,
+      aiWords: wordsData.aiWords,
+      fallbackWords: wordsData.aiWords.length > 0 ? [] : wordsData.fallbackWords, // Only provide fallback if AI failed
     };
+
+    return response;
   }
 
   async selectWordAndStartRound(roomId: string, word: string, topic: string) {

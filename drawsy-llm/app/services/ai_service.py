@@ -131,33 +131,13 @@ class AIService:
         if self.openrouter_api_key:
             try:
                 response = await self._generate_openrouter_multiple_words(topic, count)
-                if response and len(response) == count:
-                    return response
+                if response and len(response) >= 3:  # Accept if we get at least 3 valid words
+                    return response[:count]  # Return exactly the requested count
             except Exception as e:
                 logger.error(f"OpenRouter multiple words generation failed: {e}")
         
-        # Fallback to predefined word bank - ensure exactly the requested count
-        if topic in self.word_bank:
-            words = self.word_bank[topic]
-        else:
-            # Use Objects as fallback
-            words = self.word_bank.get("Objects", [])
-        
-        # Ensure we have enough words by cycling through if needed
-        if len(words) >= count:
-            return random.sample(words, count)
-        else:
-            # If we don't have enough unique words, cycle through them
-            result = []
-            available_words = words.copy()
-            while len(result) < count:
-                if not available_words:
-                    available_words = words.copy()  # Reset the pool
-                word = random.choice(available_words)
-                available_words.remove(word)
-                if word not in result:  # Avoid duplicates
-                    result.append(word)
-            return result[:count]
+        # If AI failed, return empty list - let the backend handle fallback
+        return []
 
     async def generate_chat_suggestion(self, message: str, count: int = 3, moods: List[str] = None) -> List[str]:
         """Generate multiple AI suggestions for chat messages with different moods."""

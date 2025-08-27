@@ -81,15 +81,19 @@ export class LLMService {
         count: 5,  // Always request exactly 5 words
       });
       aiWords = response.data.words || [];
+      
+      // Validate that we got actual words (not empty or invalid responses)
+      aiWords = aiWords.filter(word => word && typeof word === 'string' && word.trim().length > 0);
     } catch (error) {
       this.logger.error('Failed to generate AI words:', error.message);
+      aiWords = []; // Ensure empty array on error
     }
 
     const fallbackWords = fallbackWordsByTopic[topic] || fallbackWordsByTopic['Objects'];
     
     return {
-      aiWords,
-      fallbackWords: fallbackWords.slice(0, 5),  // Ensure exactly 5 fallback words
+      aiWords: aiWords.length > 0 ? aiWords : [], // Only return AI words if we have valid ones
+      fallbackWords: fallbackWords.slice(0, 5),  // Always prepare fallback words
     };
   }
 
