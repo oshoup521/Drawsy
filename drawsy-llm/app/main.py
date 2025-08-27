@@ -7,8 +7,6 @@ import logging
 from .models import (
     FunnyResponseRequest,
     FunnyResponseResponse,
-    WordGenerationRequest,
-    WordGenerationResponse,
     ChatSuggestionRequest,
     ChatSuggestionResponse,
     HealthResponse
@@ -84,28 +82,7 @@ async def generate_funny_response(request: FunnyResponseRequest):
             detail="Failed to generate funny response"
         )
 
-@app.post("/generate-word", response_model=WordGenerationResponse)
-async def generate_word(request: WordGenerationRequest):
-    """
-    Generate a word and topic for the drawing game.
-    
-    Optionally takes a topic parameter. If no topic is provided,
-    a random topic will be selected.
-    """
-    try:
-        word_data = await ai_service.generate_word_suggestion(request.topic)
-        
-        return WordGenerationResponse(
-            topic=word_data["topic"],
-            word=word_data["word"]
-        )
-    
-    except Exception as e:
-        logger.error(f"Error generating word: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate word"
-        )
+
 
 @app.post("/generate-chat-suggestions", response_model=ChatSuggestionResponse)
 async def generate_chat_suggestions(request: ChatSuggestionRequest):
@@ -130,6 +107,68 @@ async def generate_chat_suggestions(request: ChatSuggestionRequest):
         raise HTTPException(
             status_code=500,
             detail="Failed to generate chat suggestions"
+        )
+
+@app.post("/generate-words-by-topic")
+async def generate_words_by_topic(request: dict):
+    """
+    Generate exactly 5 easy drawable words for a specific topic.
+    
+    Takes a topic and returns exactly 5 AI-generated words and 5 fallback words
+    for the drawing game word selection. Words are optimized to be easy to draw.
+    """
+    try:
+        topic = request.get("topic", "Objects")
+        # Always generate exactly 5 words
+        target_count = 5
+        
+        # Generate AI words using the existing word bank and potentially AI
+        ai_words = []
+        fallback_words = []
+        
+        # Get fallback words from the word bank (ensure exactly 5)
+        if topic in ai_service.word_bank:
+            available_fallback = ai_service.word_bank[topic]
+            fallback_words = available_fallback[:target_count]
+            # If we don't have enough, pad with random words from the same topic
+            if len(fallback_words) < target_count:
+                remaining = target_count - len(fallback_words)
+                fallback_words.extend(available_fallback[-remaining:] if len(available_fallback) > target_count else available_fallback)
+        else:
+            # If topic not found, use Objects as fallback
+            objects_words = ai_service.word_bank.get("Objects", [])
+            fallback_words = objects_words[:target_count]
+        
+        # Ensure we have exactly 5 fallback words
+        while len(fallback_words) < target_count and len(fallback_words) > 0:
+            fallback_words.extend(fallback_words[:target_count - len(fallback_words)])
+        fallback_words = fallback_words[:target_count]
+        
+        # Try to generate AI words if OpenRouter is available
+        if ai_service.openrouter_api_key:
+            try:
+                # Generate exactly 5 easy drawable words
+                ai_words = await ai_service.generate_multiple_words(topic, target_count)
+                # Ensure we have exactly 5 AI words
+                if len(ai_words) < target_count:
+                    # Pad with fallback words if needed
+                    needed = target_count - len(ai_words)
+                    ai_words.extend(fallback_words[:needed])
+                ai_words = ai_words[:target_count]
+            except Exception as e:
+                logger.error(f"Error generating AI words: {e}")
+        
+        return {
+            "words": ai_words,
+            "fallbackWords": fallback_words,
+            "topic": topic
+        }
+    
+    except Exception as e:
+        logger.error(f"Error generating words by topic: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to generate words by topic"
         )
 
 

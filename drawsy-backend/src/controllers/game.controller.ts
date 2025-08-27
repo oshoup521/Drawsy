@@ -105,4 +105,24 @@ export class GameController {
   ) {
     return this.gameService.updatePlayerScore(roomId, userId, body.scoreToAdd);
   }
+
+  @Post(':roomId/select-topic')
+  @ApiOperation({ summary: 'Select topic and get word options' })
+  @ApiResponse({ status: 200, description: 'Topic selected and words retrieved successfully' })
+  async selectTopicAndGetWords(
+    @Param('roomId') roomId: string,
+    @Body() body: { topic: string }
+  ) {
+    return this.gameService.selectTopicAndGetWords(roomId, body.topic);
+  }
+
+  @Post(':roomId/select-word')
+  @ApiOperation({ summary: 'Select word and start round' })
+  @ApiResponse({ status: 200, description: 'Word selected and round started successfully' })
+  async selectWordAndStartRound(
+    @Param('roomId') roomId: string,
+    @Body() body: { word: string; topic: string }
+  ) {
+    return this.gameService.selectWordAndStartRound(roomId, body.word, body.topic);
+  }
 }

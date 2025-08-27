@@ -8,12 +8,7 @@ class FunnyResponseRequest(BaseModel):
 class FunnyResponseResponse(BaseModel):
     funnyResponse: str
 
-class WordGenerationRequest(BaseModel):
-    topic: Optional[str] = None
 
-class WordGenerationResponse(BaseModel):
-    topic: str
-    word: str
 
 class ChatSuggestionRequest(BaseModel):
     message: str

@@ -17,37 +17,47 @@ class AIService:
         else:
             logger.warning("No OpenRouter API key found, using fallback responses only")
         
-        # Fallback word lists for different topics
+        # Easy drawable word lists for different topics - optimized for drawing games
         self.word_bank = {
             "Animals": [
-                "elephant", "giraffe", "penguin", "kangaroo", "octopus",
-                "butterfly", "dolphin", "tiger", "peacock", "flamingo",
-                "hedgehog", "platypus", "chameleon", "rhinoceros", "hippopotamus"
-            ],
-            "Fruits": [
-                "banana", "pineapple", "strawberry", "watermelon", "kiwi",
-                "mango", "papaya", "pomegranate", "blueberry", "raspberry",
-                "coconut", "avocado", "dragonfruit", "passionfruit", "lychee"
-            ],
-            "Objects": [
-                "bicycle", "umbrella", "telescope", "typewriter", "compass",
-                "calculator", "microscope", "harmonica", "accordion", "saxophone",
-                "binoculars", "thermometer", "stethoscope", "periscope", "metronome"
-            ],
-            "Nature": [
-                "mountain", "volcano", "waterfall", "rainbow", "lightning",
-                "glacier", "desert", "forest", "canyon", "meadow",
-                "archipelago", "peninsula", "geyser", "aurora", "stalactite"
+                "cat", "dog", "fish", "bird", "cow", "pig", "horse", "sheep",
+                "elephant", "giraffe", "lion", "tiger", "bear", "rabbit", "mouse",
+                "frog", "snake", "turtle", "duck", "chicken", "butterfly", "bee"
             ],
             "Food": [
-                "pizza", "hamburger", "spaghetti", "sushi", "tacos",
-                "croissant", "pretzel", "pancake", "waffle", "burrito",
-                "sandwich", "hotdog", "donut", "cupcake", "ice cream"
+                "pizza", "burger", "apple", "banana", "cake", "bread", "egg",
+                "cheese", "carrot", "tomato", "cookie", "donut", "hotdog", "taco",
+                "sandwich", "ice cream", "cherry", "orange", "grapes", "corn"
+            ],
+            "Objects": [
+                "car", "house", "book", "chair", "table", "phone", "cup", "key",
+                "clock", "lamp", "door", "window", "bed", "hat", "shoe", "bag",
+                "pen", "pencil", "camera", "guitar", "ball", "box"
+            ],
+            "Nature": [
+                "tree", "flower", "sun", "moon", "star", "cloud", "rain", "snow",
+                "mountain", "river", "ocean", "beach", "grass", "leaf", "rock",
+                "fire", "wind", "rainbow", "lightning", "volcano", "island", "forest"
             ],
             "Sports": [
-                "basketball", "football", "tennis", "swimming", "gymnastics",
-                "volleyball", "badminton", "archery", "fencing", "wrestling",
-                "bowling", "golf", "hockey", "skiing", "surfing"
+                "ball", "bat", "goal", "net", "bike", "skate", "swim", "run",
+                "jump", "kick", "throw", "catch", "race", "team", "win", "play",
+                "court", "field", "pool", "track", "gym", "medal"
+            ],
+            "Transportation": [
+                "car", "bus", "train", "plane", "boat", "bike", "truck", "taxi",
+                "ship", "rocket", "helicopter", "subway", "scooter", "van", "jeep",
+                "ferry", "yacht", "balloon", "sled", "cart", "wagon", "motor"
+            ],
+            "Professions": [
+                "doctor", "teacher", "chef", "police", "nurse", "farmer", "pilot",
+                "artist", "singer", "dancer", "writer", "driver", "builder", "baker",
+                "barber", "judge", "lawyer", "soldier", "sailor", "actor", "coach", "guide"
+            ],
+            "Entertainment": [
+                "movie", "music", "dance", "game", "toy", "party", "show", "play",
+                "song", "joke", "magic", "circus", "puppet", "mask", "costume", "stage",
+                "screen", "ticket", "popcorn", "candy", "balloon", "gift"
             ]
         }
         
@@ -114,6 +124,40 @@ class AIService:
             "topic": selected_topic,
             "word": selected_word
         }
+
+    async def generate_multiple_words(self, topic: str, count: int = 5) -> List[str]:
+        """Generate exactly the requested number of easy drawable words for a specific topic."""
+        
+        if self.openrouter_api_key:
+            try:
+                response = await self._generate_openrouter_multiple_words(topic, count)
+                if response and len(response) == count:
+                    return response
+            except Exception as e:
+                logger.error(f"OpenRouter multiple words generation failed: {e}")
+        
+        # Fallback to predefined word bank - ensure exactly the requested count
+        if topic in self.word_bank:
+            words = self.word_bank[topic]
+        else:
+            # Use Objects as fallback
+            words = self.word_bank.get("Objects", [])
+        
+        # Ensure we have enough words by cycling through if needed
+        if len(words) >= count:
+            return random.sample(words, count)
+        else:
+            # If we don't have enough unique words, cycle through them
+            result = []
+            available_words = words.copy()
+            while len(result) < count:
+                if not available_words:
+                    available_words = words.copy()  # Reset the pool
+                word = random.choice(available_words)
+                available_words.remove(word)
+                if word not in result:  # Avoid duplicates
+                    result.append(word)
+            return result[:count]
 
     async def generate_chat_suggestion(self, message: str, count: int = 3, moods: List[str] = None) -> List[str]:
         """Generate multiple AI suggestions for chat messages with different moods."""
@@ -253,6 +297,70 @@ Respond with just the word, nothing else."""
         except Exception as e:
             logger.error(f"OpenRouter word generation error: {e}")
             return None
+
+    async def _generate_openrouter_multiple_words(self, topic: str, count: int) -> List[str]:
+        """Generate exactly 5 easy drawable words using OpenRouter with Gemini."""
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.openrouter_api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:8000",
+                "X-Title": "Drawsy Game"
+            }
+            
+            prompt = f"""Generate exactly {count} words for a drawing guessing game in the topic "{topic}".
+
+IMPORTANT REQUIREMENTS:
+- Each word must be EASY to draw and recognize
+- Words should be simple, common objects/concepts that are visually distinctive
+- Avoid abstract concepts, emotions, or things that are hard to visualize
+- Perfect for drawing with simple lines and shapes
+- Appropriate for all ages
+- Between 3-10 letters (shorter is better for drawing games)
+- Choose words that have clear, recognizable visual features
+
+Examples of GOOD drawing words: cat, house, tree, car, pizza, sun, flower, book
+Examples of BAD drawing words: happiness, democracy, philosophy, quantum, algorithm
+
+Respond with exactly {count} words separated by commas, nothing else."""
+            
+            payload = {
+                "model": self.openrouter_model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 80,
+                "temperature": 0.6  # Lower temperature for more consistent, appropriate words
+            }
+            
+            response = requests.post(self.openrouter_base_url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            result = response.json()
+            words_text = result["choices"][0]["message"]["content"].strip()
+            
+            # Clean and validate words
+            words = []
+            for word in words_text.split(','):
+                clean_word = word.strip().lower()
+                # Remove any non-alphabetic characters and validate length
+                clean_word = ''.join(c for c in clean_word if c.isalpha())
+                if 3 <= len(clean_word) <= 10 and clean_word not in words:
+                    words.append(clean_word)
+            
+            # Ensure we have exactly the requested count
+            if len(words) < count:
+                # If we don't have enough, try to get more from fallback
+                fallback_words = self.word_bank.get(topic, self.word_bank.get("Objects", []))
+                for fallback_word in fallback_words:
+                    if len(words) >= count:
+                        break
+                    if fallback_word not in words:
+                        words.append(fallback_word)
+            
+            return words[:count]  # Return exactly the requested count
+            
+        except Exception as e:
+            logger.error(f"OpenRouter multiple words generation error: {e}")
+            return []
 
     async def _generate_openrouter_chat_suggestion(self, message: str, mood: str = "encouraging") -> str:
         """Generate chat suggestion using OpenRouter with Gemini for a specific mood."""

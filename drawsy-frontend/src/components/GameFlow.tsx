@@ -97,13 +97,9 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
   }, [isCurrentUserDrawer, updateGameState, setCurrentWord, setTimerActive]);
 
   // Topic selection handler
-  const handleTopicSelect = useCallback(async (topic: string) => {
+  const handleTopicSelect = useCallback((topic: string) => {
     setIsLoadingWords(true);
-    try {
-      socketService.selectTopic(topic);
-    } catch (error) {
-      setIsLoadingWords(false);
-    }
+    socketService.selectTopic(topic);
   }, []);
 
   // Word selection handler
@@ -116,6 +112,7 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
   // Close modal handlers
   const handleCloseTopicModal = () => {
     setShowTopicModal(false);
+    setIsLoadingWords(false);
   };
 
   const handleCloseWordModal = () => {
@@ -135,6 +132,7 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
         isOpen={showTopicModal}
         onTopicSelect={handleTopicSelect}
         onClose={handleCloseTopicModal}
+        isLoading={isLoadingWords}
       />
 
       {/* Word Selection Modal */}

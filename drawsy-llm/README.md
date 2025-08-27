@@ -55,7 +55,7 @@ python -m app.main
 
 ## API Endpoints
 - `/generate-funny-response` (POST): Generate a funny response to a guess
-- `/generate-word` (POST): Suggest a word for drawing (optionally by topic)
+- `/generate-words-by-topic` (POST): Generate multiple words for a specific topic
 - `/generate-chat-suggestions` (POST): Generate multiple mood-based chat suggestions
 - `/health` (GET): Health check
 

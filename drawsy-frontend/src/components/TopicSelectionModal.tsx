@@ -5,6 +5,7 @@ interface TopicSelectionModalProps {
   isOpen: boolean;
   onTopicSelect: (topic: string) => void;
   onClose: () => void;
+  isLoading?: boolean;
 }
 
 const PREDEFINED_TOPICS = [
@@ -22,14 +23,13 @@ const TopicSelectionModal: React.FC<TopicSelectionModalProps> = ({
   isOpen,
   onTopicSelect,
   onClose,
+  isLoading = false,
 }) => {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setSelectedTopic(null);
-      setIsLoading(false);
     }
   }, [isOpen]);
 
@@ -37,15 +37,9 @@ const TopicSelectionModal: React.FC<TopicSelectionModalProps> = ({
     setSelectedTopic(topic);
   };
 
-  const handleConfirm = async () => {
-    if (!selectedTopic) return;
-    
-    setIsLoading(true);
-    try {
-      await onTopicSelect(selectedTopic);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleConfirm = () => {
+    if (!selectedTopic || isLoading) return;
+    onTopicSelect(selectedTopic);
   };
 
   const handleRandomTopic = () => {
@@ -82,7 +76,12 @@ const TopicSelectionModal: React.FC<TopicSelectionModalProps> = ({
                 </div>
                 <button
                   onClick={onClose}
-                  className="text-white/60 hover:text-white transition-colors text-2xl"
+                  disabled={isLoading}
+                  className={`text-2xl transition-colors ${
+                    isLoading 
+                      ? 'text-white/30 cursor-not-allowed' 
+                      : 'text-white/60 hover:text-white'
+                  }`}
                 >
                   ×
                 </button>
@@ -95,11 +94,14 @@ const TopicSelectionModal: React.FC<TopicSelectionModalProps> = ({
                 {PREDEFINED_TOPICS.map((topic) => (
                   <motion.button
                     key={topic.name}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => handleTopicClick(topic.name)}
+                    whileHover={!isLoading ? { scale: 1.02 } : {}}
+                    whileTap={!isLoading ? { scale: 0.98 } : {}}
+                    onClick={() => !isLoading && handleTopicClick(topic.name)}
+                    disabled={isLoading}
                     className={`p-3 sm:p-4 rounded-xl border-2 transition-all text-left ${
-                      selectedTopic === topic.name
+                      isLoading
+                        ? 'opacity-50 cursor-not-allowed'
+                        : selectedTopic === topic.name
                         ? 'border-green-400 bg-green-500/20 shadow-lg shadow-green-500/20'
                         : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/30'
                     }`}
@@ -117,10 +119,15 @@ const TopicSelectionModal: React.FC<TopicSelectionModalProps> = ({
 
               {/* Random Topic Button */}
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleRandomTopic}
-                className="w-full p-4 rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30 transition-all mb-4"
+                whileHover={!isLoading ? { scale: 1.02 } : {}}
+                whileTap={!isLoading ? { scale: 0.98 } : {}}
+                onClick={() => !isLoading && handleRandomTopic()}
+                disabled={isLoading}
+                className={`w-full p-4 rounded-xl border-2 border-yellow-400/50 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 transition-all mb-4 ${
+                  isLoading 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:from-yellow-500/30 hover:to-orange-500/30'
+                }`}
               >
                 <div className="flex items-center justify-center space-x-2">
                   <span className="text-2xl">🎲</span>
@@ -155,7 +162,12 @@ const TopicSelectionModal: React.FC<TopicSelectionModalProps> = ({
             <div className="p-4 border-t border-white/10 flex flex-col sm:flex-row justify-end gap-3 flex-shrink-0">
               <button
                 onClick={onClose}
-                className="px-6 py-2 rounded-lg border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-all order-2 sm:order-1"
+                disabled={isLoading}
+                className={`px-6 py-2 rounded-lg border transition-all order-2 sm:order-1 ${
+                  isLoading
+                    ? 'border-white/10 text-white/40 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:text-white hover:border-white/40'
+                }`}
               >
                 Cancel
               </button>

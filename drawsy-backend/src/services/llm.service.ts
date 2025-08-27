@@ -33,10 +33,21 @@ export class LLMService {
 
   async generateWordSuggestion(topic?: string): Promise<{ topic: string; word: string }> {
     try {
-      const response = await axios.post(`${this.llmServiceUrl}/generate-word`, {
-        topic,
+      // Use the comprehensive API and pick a random word from the results
+      const response = await axios.post(`${this.llmServiceUrl}/generate-words-by-topic`, {
+        topic: topic || 'Objects',
+        count: 5,
       });
-      return response.data;
+      
+      const { words: aiWords, fallbackWords, topic: responseTopic } = response.data;
+      const allWords = [...(aiWords || []), ...(fallbackWords || [])];
+      
+      if (allWords.length > 0) {
+        const randomWord = allWords[Math.floor(Math.random() * allWords.length)];
+        return { topic: responseTopic, word: randomWord };
+      }
+      
+      throw new Error('No words returned from API');
     } catch (error) {
       this.logger.error('Failed to generate word suggestion:', error.message);
       // Fallback words
@@ -52,14 +63,14 @@ export class LLMService {
 
   async generateWordsByTopic(topic: string): Promise<{ aiWords: string[]; fallbackWords: string[] }> {
     const fallbackWordsByTopic: Record<string, string[]> = {
-      'Animals': ['cat', 'dog', 'elephant', 'lion', 'tiger', 'bear', 'rabbit', 'horse', 'cow', 'pig'],
-      'Food': ['pizza', 'burger', 'apple', 'banana', 'cake', 'bread', 'cheese', 'chicken', 'fish', 'rice'],
-      'Objects': ['phone', 'car', 'book', 'chair', 'table', 'computer', 'bicycle', 'camera', 'watch', 'key'],
-      'Nature': ['tree', 'flower', 'mountain', 'river', 'sun', 'moon', 'cloud', 'rain', 'snow', 'ocean'],
-      'Sports': ['football', 'basketball', 'tennis', 'soccer', 'baseball', 'swimming', 'running', 'cycling', 'golf', 'boxing'],
-      'Transportation': ['car', 'bus', 'train', 'plane', 'boat', 'bicycle', 'motorcycle', 'truck', 'helicopter', 'subway'],
-      'Professions': ['doctor', 'teacher', 'police', 'firefighter', 'chef', 'artist', 'musician', 'engineer', 'lawyer', 'nurse'],
-      'Entertainment': ['movie', 'music', 'dance', 'theater', 'game', 'book', 'tv', 'concert', 'party', 'festival'],
+      'Animals': ['cat', 'dog', 'fish', 'bird', 'cow'],
+      'Food': ['pizza', 'burger', 'apple', 'banana', 'cake'],
+      'Objects': ['car', 'house', 'book', 'chair', 'phone'],
+      'Nature': ['tree', 'flower', 'sun', 'moon', 'star'],
+      'Sports': ['ball', 'bat', 'goal', 'net', 'bike'],
+      'Transportation': ['car', 'bus', 'train', 'plane', 'boat'],
+      'Professions': ['doctor', 'teacher', 'chef', 'police', 'nurse'],
+      'Entertainment': ['movie', 'music', 'dance', 'game', 'toy'],
     };
 
     let aiWords: string[] = [];
@@ -67,7 +78,7 @@ export class LLMService {
     try {
       const response = await axios.post(`${this.llmServiceUrl}/generate-words-by-topic`, {
         topic,
-        count: 10,
+        count: 5,  // Always request exactly 5 words
       });
       aiWords = response.data.words || [];
     } catch (error) {
@@ -78,7 +89,7 @@ export class LLMService {
     
     return {
       aiWords,
-      fallbackWords,
+      fallbackWords: fallbackWords.slice(0, 5),  // Ensure exactly 5 fallback words
     };
   }
 
