@@ -136,7 +136,7 @@ const GameRoom: React.FC = () => {
       setConnected(false);
       resetGame();
     };
-  }, [roomId, navigate, setCurrentUser, setGameState, setConnected, resetGame]);
+  }, [roomId, navigate, setCurrentUser, setGameState, setConnected, resetGame, setCurrentRoomId]);
 
   // Set up socket event listeners
   useEffect(() => {
@@ -611,25 +611,25 @@ const GameRoom: React.FC = () => {
                 👥 Players ({gameState.players.length}/{gameState.playerCount})
               </h2>
               
-              <div className="lobby-players-list space-y-3 flex-1 overflow-y-auto min-h-0">
+              <div className="lobby-players-list space-y-2 flex-1 overflow-y-auto min-h-0">
                 {gameState.players.map((player) => (
                   <div
                     key={player.userId}
-                    className={`flex items-center gap-3 p-3 rounded-lg ${
+                    className={`flex items-center gap-3 p-2 rounded-lg ${
                       player.isHost ? 'bg-yellow-500/20 border border-yellow-400/30' : 'bg-white/10'
                     }`}
                   >
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
-                      <span className="text-white font-bold">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-white font-bold text-sm">
                         {player.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="text-white font-semibold">
-                        {player.userId === currentUser.userId ? 'You' : player.name}
-                      </div>
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <span className="text-white font-semibold truncate">
+                        {player.userId === currentUser.userId ? `${player.name} (you)` : player.name}
+                      </span>
                       {player.isHost && (
-                        <div className="text-yellow-400 text-xs">👑 Host</div>
+                        <span className="text-yellow-400 text-xs flex-shrink-0">👑 Host</span>
                       )}
                     </div>
                   </div>
