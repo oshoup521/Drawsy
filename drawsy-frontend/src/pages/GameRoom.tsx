@@ -729,22 +729,30 @@ const GameRoom: React.FC = () => {
                 {gameState.players.map((player) => (
                   <div
                     key={player.userId}
-                    className={`flex items-center gap-3 p-2 rounded-lg ${
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
                       player.isHost ? 'bg-yellow-500/20 border border-yellow-400/30' : 'bg-white/10'
                     }`}
                   >
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white font-bold text-sm">
-                        {player.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <span className="text-white font-semibold" title={player.userId === currentUser.userId ? `${player.name} (you)` : player.name}>
-                        {getDisplayName(player.name, player.userId === currentUser.userId)}
-                      </span>
-                      {player.isHost && (
-                        <span className="text-yellow-400 text-xs flex-shrink-0">👑 Host</span>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      player.isHost ? 'bg-gradient-to-br from-yellow-400 to-orange-500' : 'bg-gradient-to-br from-blue-400 to-purple-500'
+                    }`}>
+                      {player.isHost ? (
+                        <span className="text-white text-base">👑</span>
+                      ) : (
+                        <span className="text-white font-bold text-sm">
+                          {player.name.charAt(0).toUpperCase()}
+                        </span>
                       )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <span 
+                          className="text-white font-medium text-sm truncate flex-1" 
+                          title={player.userId === currentUser.userId ? `${player.name} (you)` : player.name}
+                        >
+                          {getDisplayName(player.name, player.userId === currentUser.userId, 15)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}

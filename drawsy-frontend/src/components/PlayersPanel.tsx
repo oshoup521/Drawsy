@@ -13,7 +13,7 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
   const currentDrawer = useCurrentDrawer();
 
   // Helper function to truncate name while preserving "(you)" for current user
-  const getDisplayName = (player: Player, isCurrentUser: boolean, maxLength: number = 12) => {
+  const getDisplayName = (player: Player, isCurrentUser: boolean, maxLength: number = 13) => {
     if (!isCurrentUser) {
       return player.name.length > maxLength ? `${player.name.substring(0, maxLength)}...` : player.name;
     }
@@ -81,42 +81,41 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.1 }}
-              className={`player-item relative w-full overflow-hidden p-2 rounded-lg ${
+              className={`player-item relative w-full overflow-hidden px-3 py-2 rounded-lg ${
                 player.userId === currentDrawer?.userId ? 'current-drawer bg-blue-500/20' : 'bg-white/5'
               } ${
                 player.userId === currentUser?.userId ? 'ring-2 ring-white/30' : ''
               }`}
             >
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                {/* Player Icon */}
-                <div className="text-lg flex-shrink-0">
-                  {getPlayerIcon(player)}
+              <div className="flex items-center justify-between w-full">
+                {/* Left section - Icon and Player Info */}
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {/* Player Icon */}
+                  <div className="text-base flex-shrink-0">
+                    {getPlayerIcon(player)}
+                  </div>
+
+                  {/* Player Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1 min-w-0">
+                      <span 
+                        className="text-sm font-medium text-white truncate flex-1" 
+                        title={player.userId === currentUser?.userId ? `${player.name} (you)` : player.name}
+                      >
+                        {getDisplayName(player, player.userId === currentUser?.userId)}
+                      </span>
+                    </div>
+                    
+                    {/* Score */}
+                    <div className="text-xs text-white/60 mt-0.5">
+                      {player.score} pts
+                    </div>
+                  </div>
                 </div>
 
-                {/* Player Info */}
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <div className="flex items-center gap-2 min-w-0 mb-1">
-                    <span className="font-semibold text-white flex-1" title={player.userId === currentUser?.userId ? `${player.name} (you)` : player.name}>
-                      {getDisplayName(player, player.userId === currentUser?.userId)}
-                    </span>
-                    {/* Player Status Badge - now inline */}
-                    {player.isHost && (
-                      <span className="text-xs text-yellow-400 flex-shrink-0">👑 Host</span>
-                    )}
-                    {player.userId === currentDrawer?.userId && (
-                      <span className="text-xs text-blue-400 flex-shrink-0">🎨 Drawing</span>
-                    )}
-                  </div>
-                  
-                  {/* Score */}
-                  <div className="text-xs text-white/60">
-                    {player.score} pts
-                  </div>
-                </div>
-
-                {/* Rank */}
-                <div className="text-right flex-shrink-0">
-                  <div className="text-sm font-bold text-white">
+                {/* Right section - Rank */}
+                <div className="text-right flex-shrink-0 ml-2">
+                  <div className="text-xs font-bold text-white">
                     #{index + 1}
                   </div>
                 </div>
@@ -138,11 +137,14 @@ const PlayersPanel: React.FC<PlayersPanelProps> = ({ className = '' }) => {
             <div className="text-white/60 text-xs text-center mb-2">
               🏆 Current Leader
             </div>
-            <div className="text-center p-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-400/30">
-              <div className="text-yellow-400 font-bold" title={sortedPlayers[0].userId === currentUser?.userId ? `${sortedPlayers[0].name} (you)` : sortedPlayers[0].name}>
+            <div className="text-center p-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-lg border border-yellow-400/30">
+              <div 
+                className="text-yellow-400 font-bold text-sm truncate" 
+                title={sortedPlayers[0].userId === currentUser?.userId ? `${sortedPlayers[0].name} (you)` : sortedPlayers[0].name}
+              >
                 {getDisplayName(sortedPlayers[0], sortedPlayers[0].userId === currentUser?.userId, 15)}
               </div>
-              <div className="text-white/80 text-sm">
+              <div className="text-white/80 text-xs mt-1">
                 {sortedPlayers[0].score} points
               </div>
             </div>
