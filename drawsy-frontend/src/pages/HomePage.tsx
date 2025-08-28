@@ -225,26 +225,7 @@ const HomePage: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Test Links */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.0 }}
-          className="mt-6 flex justify-center space-x-4 text-white/40 text-xs"
-        >
-          <button
-            onClick={() => navigate('/sound-test')}
-            className="hover:text-white/60 transition-colors"
-          >
-            🎵 Sound Test
-          </button>
-          <button
-            onClick={() => navigate('/confetti-test')}
-            className="hover:text-white/60 transition-colors"
-          >
-            🎉 Confetti Test
-          </button>
-        </motion.div>
+
       </motion.div>
     </div>
   );

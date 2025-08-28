@@ -167,7 +167,7 @@ export interface GameSettings {
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   playerCount: 3,
-  guessTime: 30,
+  guessTime: 60,
   numRounds: 2,
 };
 
