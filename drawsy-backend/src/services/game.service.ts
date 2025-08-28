@@ -532,25 +532,60 @@ export class GameService {
     game.status = GameStatus.FINISHED;
     await this.gameRepository.save(game);
 
-    // Find winner (player with highest score)
-    const winner = game.players.reduce((prev, current) =>
-      (prev.score > current.score) ? prev : current
-    );
+    // Sort players by score (highest first)
+    const sortedPlayers = game.players.sort((a, b) => b.score - a.score);
+    
+    // Get the highest score
+    const highestScore = sortedPlayers[0]?.score || 0;
+    
+    // Find all players with the highest score (winners in case of tie)
+    const winners = sortedPlayers.filter(player => player.score === highestScore);
+    
+    // Check if it's a draw (all players have the same score or multiple winners)
+    const isDraw = winners.length > 1 || (game.players.length > 1 && game.players.every(p => p.score === highestScore));
+
+    // Create final scores with proper ranking
+    const finalScoresWithRanking = [];
+    let currentRank = 1;
+    let previousScore = null;
+    let playersAtCurrentRank = 0;
+
+    for (let i = 0; i < sortedPlayers.length; i++) {
+      const player = sortedPlayers[i];
+      
+      // If this is a new score, update the rank
+      if (previousScore !== null && player.score < previousScore) {
+        currentRank += playersAtCurrentRank;
+        playersAtCurrentRank = 1;
+      } else {
+        playersAtCurrentRank++;
+      }
+
+      finalScoresWithRanking.push({
+        userId: player.userId,
+        name: player.name,
+        score: player.score,
+        rank: currentRank,
+      });
+
+      previousScore = player.score;
+    }
 
     return {
       gameStatus: 'finished',
-      winner: {
-        userId: winner.userId,
-        name: winner.name,
-        score: winner.score,
+      isDraw,
+      winners: winners.map(w => ({
+        userId: w.userId,
+        name: w.name,
+        score: w.score,
+      })),
+      // Keep backward compatibility
+      winner: isDraw ? null : {
+        userId: winners[0].userId,
+        name: winners[0].name,
+        score: winners[0].score,
       },
-      finalScores: game.players
-        .sort((a, b) => b.score - a.score)
-        .map(p => ({
-          userId: p.userId,
-          name: p.name,
-          score: p.score,
-        })),
+      finalScores: finalScoresWithRanking,
     };
   }
 

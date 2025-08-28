@@ -16,6 +16,7 @@ import { useGameStore, useIsCurrentUserDrawer } from '../store/gameStore';
 import { gameApi } from '../services/api';
 import socketService from '../services/socket';
 import { celebrateWinner } from '../utils/confetti';
+import { Player } from '../types/game';
 import { 
   playLobbyMessageSound, 
   playGameMessageSound, 
@@ -37,6 +38,8 @@ const GameRoom: React.FC = () => {
   const [showScores, setShowScores] = useState(false);
   const [showWinnerPodium, setShowWinnerPodium] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
+  const [isDraw, setIsDraw] = useState(false);
+  const [winners, setWinners] = useState<Player[]>([]);
 
   // Helper function to truncate name while preserving "(you)" for current user
   const getDisplayName = (playerName: string, isCurrentUser: boolean, maxLength: number = 15) => {
@@ -420,13 +423,18 @@ const GameRoom: React.FC = () => {
     const handleGameOver = (data: any) => {
       setTimerActive(false);
       
-      // Update final scores
+      // Store draw information
+      setIsDraw(data.isDraw || false);
+      setWinners(data.winners || []);
+      
+      // Update final scores with ranking
       if (data.finalScores) {
         data.finalScores.forEach((playerScore: any) => {
           updatePlayer({
             userId: playerScore.userId,
             name: playerScore.name,
             score: playerScore.score,
+            rank: playerScore.rank,
           });
         });
       }
@@ -447,7 +455,17 @@ const GameRoom: React.FC = () => {
         setShowWinnerPodium(true);
       }, 1000);
 
-      toast.success(`🏆 ${data.winner.name} wins the game!`);
+      // Show appropriate toast message
+      if (data.isDraw) {
+        if (data.winners && data.winners.length > 1) {
+          const winnerNames = data.winners.map((w: any) => w.name).join(', ');
+          toast.success(`🏆 It's a draw! Winners: ${winnerNames}`);
+        } else {
+          toast.success(`🏆 It's a draw! Everyone tied!`);
+        }
+      } else if (data.winner) {
+        toast.success(`🏆 ${data.winner.name} wins the game!`);
+      }
     };
 
     // Set up the event listeners
@@ -534,6 +552,10 @@ const GameRoom: React.FC = () => {
   const handleReturnToLobby = () => {
     // Reset the game state to lobby
     setShowWinnerPodium(false);
+    
+    // Reset draw-related state
+    setIsDraw(false);
+    setWinners([]);
     
     // Reset the game to initial state but keep players and room
     if (gameState && roomId) {
@@ -970,6 +992,8 @@ const GameRoom: React.FC = () => {
       <WinnerPodium
         isOpen={showWinnerPodium}
         players={gameState?.players || []}
+        isDraw={isDraw}
+        winners={winners}
         onClose={() => setShowWinnerPodium(false)}
         onReturnToLobby={handleReturnToLobby}
       />

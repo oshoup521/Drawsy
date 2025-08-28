@@ -2,6 +2,7 @@ export interface Player {
   userId: string;
   name: string;
   score: number;
+  rank?: number;
   isHost?: boolean;
   isActive?: boolean;
 }
@@ -153,7 +154,9 @@ export interface SocketEvents {
     scores: Player[];
   }) => void;
   game_over: (data: {
-    winner: Player;
+    isDraw: boolean;
+    winners: Player[];
+    winner?: Player | null; // For backward compatibility
     finalScores: Player[];
   }) => void;
   error: (data: { message: string }) => void;
