@@ -509,8 +509,9 @@ const GameRoom: React.FC = () => {
   const handleTimeUp = () => {
     setTimerActive(false);
     
-    // Send end round request to server
-    if (roomId && gameState?.status === 'playing') {
+    // Prevent duplicate endRound calls by checking if timer is still active
+    if (roomId && gameState?.status === 'playing' && timerActive) {
+      console.log(`[FRONTEND] Calling endRound for room ${roomId}, round ${gameState.currentRound}`);
       socketService.endRound();
     }
   };

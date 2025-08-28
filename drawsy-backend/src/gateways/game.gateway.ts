@@ -55,6 +55,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private logger = new Logger(GameGateway.name);
   private connectedClients = new Map<string, ConnectedClient>();
+  private endRoundProcessing = new Set<string>(); // Track rooms currently processing end round
 
   constructor(
     private gameService: GameService,
@@ -450,47 +451,90 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const clientInfo = this.connectedClients.get(client.id);
       if (!clientInfo) return;
 
-      // Get current game state to get the correct word
-      const gameState = await this.gameService.getGameState(clientInfo.roomId);
-      const correctWord = gameState.currentWord || 'Unknown';
+      // Prevent concurrent processing of end_round for the same room
+      if (this.endRoundProcessing.has(clientInfo.roomId)) {
+        console.log(`[END_ROUND] Already processing end round for room ${clientInfo.roomId}, ignoring duplicate request`);
+        return;
+      }
 
-      // Emit round ended event first
-      this.server.to(clientInfo.roomId).emit('end_round', {
-        correctWord,
-        scores: gameState.players,
-      });
+      // Mark this room as processing
+      this.endRoundProcessing.add(clientInfo.roomId);
 
-      // Check if this was the last round BEFORE calling any service methods
-      if (gameState.currentRound >= gameState.numRounds) {
-        // Game should end
-        const gameResult = await this.gameService.endGame(clientInfo.roomId);
-        this.server.to(clientInfo.roomId).emit('game_over', gameResult);
-      } else {
+      try {
+        // Get current game state to get the correct word
+        const gameState = await this.gameService.getGameState(clientInfo.roomId);
+        const correctWord = gameState.currentWord || 'Unknown';
+
+        console.log(`[END_ROUND] Room: ${clientInfo.roomId}, Current Round: ${gameState.currentRound}, Max Rounds: ${gameState.numRounds}, Status: ${gameState.status}`);
+
+        // Check if game is already finishing or finished to prevent duplicate processing
+        if (gameState.status !== 'playing') {
+          console.log(`[END_ROUND] Game not in playing state: ${gameState.status}, ignoring request`);
+          return;
+        }
+
+        // Emit round ended event first
+        this.server.to(clientInfo.roomId).emit('end_round', {
+          correctWord,
+          scores: gameState.players,
+        });
+
         // Start next round - select next drawer and request topic selection
         const nextDrawerResult = await this.gameService.selectNextDrawer(clientInfo.roomId);
+        
+        console.log(`[END_ROUND] After selectNextDrawer - New Round: ${nextDrawerResult.roundNumber}, Max Rounds: ${gameState.numRounds}`);
 
-        // Notify about next round starting
-        this.server.to(clientInfo.roomId).emit('next_round_started', {
-          currentRound: nextDrawerResult.roundNumber,
-          drawerUserId: nextDrawerResult.currentDrawerUserId,
-          drawerName: nextDrawerResult.drawerName,
-          totalPlayers: nextDrawerResult.totalActivePlayers,
-        });
-
-        // Send topic selection request only to the new drawer
-        const drawerConnections = Array.from(this.connectedClients.values())
-          .filter(conn => conn.userId === nextDrawerResult.currentDrawerUserId && conn.roomId === clientInfo.roomId);
-
-        // Send to all connections of the new drawer (in case they have multiple tabs)
-        drawerConnections.forEach(drawerConnection => {
-          drawerConnection.socket.emit('request_topic_selection', {
+        // Check if this is the last round AFTER incrementing the round
+        if (nextDrawerResult.roundNumber > gameState.numRounds) {
+          // Game should end
+          console.log(`[END_ROUND] Game ending - Round ${nextDrawerResult.roundNumber} > Max ${gameState.numRounds}`);
+          const gameResult = await this.gameService.endGame(clientInfo.roomId);
+          this.server.to(clientInfo.roomId).emit('game_over', gameResult);
+        } else {
+          // Continue with next round
+          console.log(`[END_ROUND] Continuing to round ${nextDrawerResult.roundNumber}`);
+          
+          // Double-check game state before sending next round events (in case of race conditions)
+          const finalGameState = await this.gameService.getGameState(clientInfo.roomId);
+          if (finalGameState.status !== 'playing') {
+            console.log(`[END_ROUND] Game state changed to ${finalGameState.status}, aborting next round setup`);
+            return;
+          }
+          
+          // Notify about next round starting
+          this.server.to(clientInfo.roomId).emit('next_round_started', {
+            currentRound: nextDrawerResult.roundNumber,
             drawerUserId: nextDrawerResult.currentDrawerUserId,
-            roundNumber: nextDrawerResult.roundNumber,
+            drawerName: nextDrawerResult.drawerName,
+            totalPlayers: nextDrawerResult.totalActivePlayers,
           });
-        });
+
+          // Send topic selection request only to the new drawer
+          const drawerConnections = Array.from(this.connectedClients.values())
+            .filter(conn => conn.userId === nextDrawerResult.currentDrawerUserId && conn.roomId === clientInfo.roomId);
+
+          console.log(`[END_ROUND] Sending topic selection to drawer ${nextDrawerResult.currentDrawerUserId}, found ${drawerConnections.length} connections`);
+
+          // Send to all connections of the new drawer (in case they have multiple tabs)
+          drawerConnections.forEach(drawerConnection => {
+            drawerConnection.socket.emit('request_topic_selection', {
+              drawerUserId: nextDrawerResult.currentDrawerUserId,
+              roundNumber: nextDrawerResult.roundNumber,
+            });
+          });
+        }
+      } finally {
+        // Always remove the processing flag
+        this.endRoundProcessing.delete(clientInfo.roomId);
       }
 
     } catch (error) {
+      console.error('[END_ROUND] Error:', error);
+      // Make sure to remove processing flag on error
+      const clientInfo = this.connectedClients.get(client.id);
+      if (clientInfo) {
+        this.endRoundProcessing.delete(clientInfo.roomId);
+      }
       client.emit('error', { message: error.message });
     }
   }

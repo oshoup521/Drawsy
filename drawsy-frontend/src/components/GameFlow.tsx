@@ -45,12 +45,28 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
     const handleRequestTopicSelection = (data: any) => {
       // Check if this user is the intended drawer based on the event data
       const currentUser = useGameStore.getState().currentUser;
+      const currentGameState = useGameStore.getState().gameState;
+      
+      // Don't show topic modal if game is finished
+      if (currentGameState?.status === 'finished') {
+        console.log('[GameFlow] Ignoring topic selection request - game is finished');
+        return;
+      }
+      
       if (currentUser?.userId === data.drawerUserId) {
+        console.log('[GameFlow] Showing topic modal for drawer:', data.drawerUserId);
         setShowTopicModal(true);
       }
     };
 
     const handleTopicWords = (data: any) => {
+      // Don't proceed if game is finished
+      const currentGameState = useGameStore.getState().gameState;
+      if (currentGameState?.status === 'finished') {
+        console.log('[GameFlow] Ignoring topic words - game is finished');
+        return;
+      }
+      
       setSelectedTopic(data.topic);
       setAiWords(data.aiWords || []);
       setFallbackWords(data.fallbackWords || []);
@@ -76,12 +92,28 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
       setCurrentWord(data.word);
     };
 
+    const handleGameOver = (data: any) => {
+      // Clear all modals when game ends
+      setShowTopicModal(false);
+      setShowWordModal(false);
+      setCurrentWord(null);
+      
+      // Update game state
+      updateGameState((prev) => prev ? {
+        ...prev,
+        status: 'finished'
+      } : null);
+      
+      console.log('[GameFlow] Game over, clearing all modals and state');
+    };
+
     // Register event listeners
     socketService.onNextRoundStarted(handleNextRoundStarted);
     socketService.onRequestTopicSelection(handleRequestTopicSelection);
     socketService.onTopicWords(handleTopicWords);
     socketService.onRoundStarted(handleRoundStarted);
     socketService.onDrawerWord(handleDrawerWord);
+    socketService.onGameOver(handleGameOver);
 
     return () => {
       // Clean up listeners
@@ -90,6 +122,7 @@ const GameFlow: React.FC<GameFlowProps> = ({ children, timerActive, setTimerActi
       socketService.removeListener('topic_words');
       socketService.removeListener('round_started');
       socketService.removeListener('drawer_word');
+      socketService.removeListener('game_over');
     };
   }, [isCurrentUserDrawer, updateGameState, setCurrentWord, setTimerActive]);
 

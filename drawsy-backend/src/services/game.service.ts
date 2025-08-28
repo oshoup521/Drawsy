@@ -391,6 +391,12 @@ export class GameService {
     // Increment round and update game with new drawer
     const previousDrawerUserId = game.currentDrawerUserId;
     game.currentRound += 1;
+    
+    // Important: Don't allow incrementing beyond max rounds + 1 (to allow game over detection)
+    if (game.currentRound > game.numRounds + 1) {
+      game.currentRound = game.numRounds + 1;
+    }
+    
     game.currentDrawerUserId = nextDrawer.userId;
     game.currentWord = null; // Clear previous word
     game.wordLength = null; // Clear previous word length
