@@ -505,6 +505,17 @@ const GameRoom: React.FC = () => {
     navigate('/');
   };
 
+  const handleLogoClick = () => {
+    // If the game is actively being played, ask for confirmation
+    if (gameState?.status === 'playing') {
+      const confirmed = window.confirm('Are you sure you want to leave the game? You will lose your progress.');
+      if (!confirmed) return;
+    }
+    
+    // Use the same leave logic as the Leave button
+    handleLeaveRoom();
+  };
+
   // Timer handlers
   const handleTimeUp = () => {
     setTimerActive(false);
@@ -615,9 +626,13 @@ const GameRoom: React.FC = () => {
           className="game-header"
         >
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold font-['Fredoka']">
+            <button
+              onClick={handleLogoClick}
+              className="text-2xl font-bold font-['Fredoka'] text-white hover:text-white/80 hover:scale-105 transition-all duration-200 cursor-pointer bg-transparent border-none p-0"
+              title="Go to Home Page"
+            >
               🎨 Drawsy - Lobby
-            </h1>
+            </button>
             <div className="flex items-center gap-2 text-sm">
               <div 
                 className="px-3 py-1 bg-white/20 rounded-full cursor-pointer hover:bg-white/30 transition-colors flex items-center gap-2 group"
@@ -773,9 +788,13 @@ const GameRoom: React.FC = () => {
         className="game-header"
       >
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold font-['Fredoka']">
+          <button
+            onClick={handleLogoClick}
+            className="text-2xl font-bold font-['Fredoka'] text-white hover:text-white/80 hover:scale-105 transition-all duration-200 cursor-pointer bg-transparent border-none p-0"
+            title="Go to Home Page"
+          >
             🎨 Drawsy
-          </h1>
+          </button>
           <div className="flex items-center gap-2 text-sm">
             <span className="px-3 py-1 bg-white/20 rounded-full">
               Room: {roomId}

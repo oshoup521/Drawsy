@@ -64,6 +64,13 @@ const JoinRoom: React.FC = () => {
           transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
           className="mb-8"
         >
+          <button
+            onClick={handleGoBack}
+            className="text-xl font-bold font-['Fredoka'] text-white/60 hover:text-white hover:scale-105 transition-all duration-200 cursor-pointer bg-transparent border-none p-0 mb-4"
+            title="Go to Home Page"
+          >
+            🎨 Drawsy
+          </button>
           <h1 className="text-3xl font-bold text-white mb-2 font-['Fredoka']">
             🚪 Join Game Room
           </h1>
