@@ -72,10 +72,10 @@ const CompactTimer: React.FC<CompactTimerProps> = ({
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={`flex items-center gap-2 px-3 py-1 rounded-full ${getTimerColor()} ${className}`}
+      className={`flex items-center gap-3 px-4 py-2 rounded-full ${getTimerColor()} ${className}`}
     >
       {/* Mini Progress Circle */}
-      <div className="relative w-5 h-5">
+      <div className="relative w-7 h-7">
         <svg className="w-full h-full transform -rotate-90" viewBox="0 0 20 20">
           <circle
             cx="10"
@@ -102,7 +102,7 @@ const CompactTimer: React.FC<CompactTimerProps> = ({
       </div>
 
       {/* Timer Text */}
-      <span className="text-sm font-semibold">
+      <span className="text-base font-semibold">
         ⏱️ {formatTime(timeLeft)}
       </span>
 
@@ -111,7 +111,7 @@ const CompactTimer: React.FC<CompactTimerProps> = ({
         <motion.span
           animate={{ opacity: [1, 0.3, 1] }}
           transition={{ duration: 0.5, repeat: Infinity }}
-          className="text-xs font-bold"
+          className="text-sm font-bold"
         >
           !
         </motion.span>
