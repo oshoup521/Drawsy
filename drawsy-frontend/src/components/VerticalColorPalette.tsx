@@ -25,11 +25,11 @@ const VerticalColorPalette: React.FC<VerticalColorPaletteProps> = ({
       animate={{ opacity: 1, x: 0 }}
       className={`flex flex-col items-center gap-2 h-full max-h-[calc(100vh-140px)] ${className}`}
     >
-      <div className="glass-card p-3 flex flex-col items-center gap-3 h-full overflow-y-auto">
+      <div className="glass-card p-3 flex flex-col items-center h-full">
         {/* Color Palette */}
-        <div className="flex flex-col gap-2 flex-shrink-0">
-          <span className="text-white text-xs font-semibold text-center">Colors</span>
-          <div className="flex flex-col gap-1.5 max-h-64 overflow-y-auto">
+        <div className="flex flex-col gap-2 flex-1 min-h-0">
+          <span className="text-white text-xs font-semibold text-center flex-shrink-0">Colors</span>
+          <div className="flex flex-col gap-1.5 flex-1 overflow-y-auto min-h-0">
             {DRAWING_COLORS.map((color) => (
               <button
                 key={color}
@@ -48,7 +48,7 @@ const VerticalColorPalette: React.FC<VerticalColorPaletteProps> = ({
         </div>
 
         {/* Brush Size */}
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+        <div className="flex flex-col items-center gap-2 flex-shrink-0 mt-2">
           <span className="text-white text-xs font-semibold">Size</span>
           <div className="flex flex-col items-center gap-1">
             <input
