@@ -42,7 +42,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
     });
   }, [currentUser, isTyping]);
 
-  // Setup socket event listeners for typing
+  // Setup socket event listeners for typing and AI suggestions
   useEffect(() => {
     const handleTypingStartBroadcast = (data: { userId: string; name: string }) => {
       if (data.userId !== currentUser?.userId) {
@@ -58,12 +58,26 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
       removeTypingUser(data.userId);
     };
 
+    const handleAISuggestions = (data: { message: string; suggestions: string[]; senderId: string }) => {
+      console.log('🤖 Received AI suggestions:', data);
+      
+      // Only show AI suggestions if the current user is NOT the sender
+      if (currentUser && data.senderId !== currentUser.userId && data.suggestions.length > 0) {
+        console.log('✅ SHOWING AI suggestions for other users:', data.suggestions);
+        setAiSuggestions(data.suggestions);
+      } else {
+        console.log('❌ NOT showing AI suggestions - user is sender or no current user');
+      }
+    };
+
     socketService.onTypingStart(handleTypingStartBroadcast);
     socketService.onTypingStop(handleTypingStopBroadcast);
+    socketService.onAISuggestions(handleAISuggestions);
 
     return () => {
       socketService.removeListener('typing_start');
       socketService.removeListener('typing_stop');
+      socketService.removeListener('ai_suggestions');
     };
   }, [currentUser, addTypingUser, removeTypingUser]);
 
@@ -103,57 +117,6 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
-
-  // Extract AI suggestions from new messages (only show to others, not the sender)
-  useEffect(() => {
-    const latestMessage = chatMessages[chatMessages.length - 1];
-    console.log('=== AI Suggestions Debug ===');
-    console.log('Latest message:', latestMessage);
-    console.log('Current user:', currentUser);
-    console.log('Message userId:', latestMessage?.userId);
-    console.log('Current user userId:', currentUser?.userId);
-    console.log('Message userId TYPE:', typeof latestMessage?.userId);
-    console.log('Current user userId TYPE:', typeof currentUser?.userId);
-    console.log('Are they different?', latestMessage?.userId !== currentUser?.userId);
-    console.log('Are they equal?', latestMessage?.userId === currentUser?.userId);
-    console.log('Has AI suggestions?', (latestMessage?.aiSuggestions?.length ?? 0) > 0);
-    console.log('Is not AI message?', !latestMessage?.isAI);
-
-    // Clear suggestions first
-    setAiSuggestions([]);
-
-    // Only show AI suggestions if:
-    // 1. Message has AI suggestions
-    // 2. Message is not from AI
-    // 3. Current user exists
-    // 4. Current user is NOT the sender of this message
-    if (latestMessage?.aiSuggestions &&
-      (latestMessage.aiSuggestions?.length ?? 0) > 0 &&
-      !latestMessage.isAI &&
-      currentUser &&
-      latestMessage.userId !== currentUser.userId) {
-      console.log('✅ SHOWING AI suggestions for other users:', latestMessage.aiSuggestions);
-      // Add a small delay to ensure state is clean
-      setTimeout(() => {
-        setAiSuggestions(latestMessage.aiSuggestions || []);
-      }, 50);
-    } else {
-      console.log('❌ NOT showing AI suggestions');
-      if (latestMessage?.userId === currentUser?.userId) {
-        console.log('Reason: User is the sender of this message');
-      }
-      if (!latestMessage?.aiSuggestions || (latestMessage.aiSuggestions?.length ?? 0) === 0) {
-        console.log('Reason: No AI suggestions in message');
-      }
-      if (latestMessage?.isAI) {
-        console.log('Reason: Message is from AI');
-      }
-      if (!currentUser) {
-        console.log('Reason: No current user');
-      }
-    }
-    console.log('=== End Debug ===');
-  }, [chatMessages, currentUser]);
 
   const handleSendMessage = () => {
     if (!inputMessage.trim() || !currentUser) return;
@@ -358,7 +321,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                 exit={{ opacity: 0, height: 0 }}
                 className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10 overflow-hidden"
               >
-                <div className="flex items-start gap-2 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                   <span className="text-xs text-white/60 font-medium flex items-center gap-1 flex-shrink-0">
                     <span className="text-xs">🤖</span>
                     AI:

@@ -64,7 +64,6 @@ export interface GuessWordData {
 export interface ChatMessage {
   userId: string;
   message: string;
-  aiSuggestions?: string[];
   timestamp?: number;
   isAI?: boolean;
   isCorrectGuess?: boolean;

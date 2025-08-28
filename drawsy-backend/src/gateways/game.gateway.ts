@@ -371,34 +371,44 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return;
       }
 
-      // Generate AI suggestions with different moods
-      let aiSuggestions: string[] = [];
-      try {
-        console.log('Attempting to generate AI suggestions for message:', data.message);
-        aiSuggestions = await this.llmService.generateChatSuggestion(
-          data.message,
-        );
-        // Only take first 2 suggestions to keep UI minimal
-        aiSuggestions = aiSuggestions.slice(0, 2);
-        console.log('AI suggestions generated:', aiSuggestions);
-      } catch (error) {
-        console.error('Failed to generate AI suggestions:', error);
-        // Failed to generate AI suggestions, continuing without them
-      }
-
+      // Send chat message immediately for fast response
       const chatData = {
         userId: data.userId,
         message: data.message,
-        aiSuggestions,
       };
 
-
-
-      // Broadcast chat message to all players in the room
+      // Broadcast chat message to all players in the room immediately
       this.server.to(clientInfo.roomId).emit('chat_message', chatData);
+
+      // Generate AI suggestions asynchronously in the background
+      this.generateAISuggestionsAsync(data.message, clientInfo.roomId, data.userId);
 
     } catch (error) {
       // Chat message error occurred
+    }
+  }
+
+  // Generate AI suggestions asynchronously without blocking chat messages
+  private async generateAISuggestionsAsync(message: string, roomId: string, senderId: string) {
+    try {
+      console.log('Generating AI suggestions asynchronously for message:', message);
+      const aiSuggestions = await this.llmService.generateChatSuggestion(message);
+      
+      if (aiSuggestions && aiSuggestions.length > 0) {
+        // Only take first 2 suggestions to keep UI minimal
+        const suggestions = aiSuggestions.slice(0, 2);
+        console.log('AI suggestions generated:', suggestions);
+        
+        // Send AI suggestions as a separate event
+        this.server.to(roomId).emit('ai_suggestions', {
+          message,
+          suggestions,
+          senderId, // Include sender ID so frontend can filter appropriately
+        });
+      }
+    } catch (error) {
+      console.error('Failed to generate AI suggestions:', error);
+      // Silently fail - chat functionality continues to work
     }
   }
 

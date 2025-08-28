@@ -309,7 +309,6 @@ const GameRoom: React.FC = () => {
       addChatMessage({
         userId: data.userId,
         message: data.message,
-        aiSuggestions: data.aiSuggestions,
         isAI: data.isAI || false,
         timestamp: Date.now(),
       });

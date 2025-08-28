@@ -237,6 +237,10 @@ class SocketService {
     this.on('typing_stop', callback);
   }
 
+  onAISuggestions(callback: (data: { message: string; suggestions: string[]; senderId: string }) => void) {
+    this.on('ai_suggestions', callback);
+  }
+
   onClearCanvas(callback: () => void) {
     this.on('clear_canvas', callback);
   }

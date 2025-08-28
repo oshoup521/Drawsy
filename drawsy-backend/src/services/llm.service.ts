@@ -105,7 +105,7 @@ export class LLMService {
         count: 2,
         moods: ['encouraging', 'curious']
       }, {
-        timeout: 10000, // 10 second timeout
+        timeout: 3000, // 3 second timeout for faster response
         headers: {
           'Content-Type': 'application/json'
         }
