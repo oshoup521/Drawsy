@@ -49,6 +49,12 @@ const JoinRoom: React.FC = () => {
     navigate('/');
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isJoining && playerName.trim() && roomId.trim()) {
+      handleJoinGame();
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <motion.div
@@ -93,6 +99,7 @@ const JoinRoom: React.FC = () => {
               placeholder="Enter your name"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
+              onKeyDown={handleKeyDown}
               className="input-field w-full text-center"
               maxLength={20}
             />
@@ -105,6 +112,7 @@ const JoinRoom: React.FC = () => {
               placeholder="Enter Room ID (e.g. ABC123)"
               value={roomId}
               onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+              onKeyDown={handleKeyDown}
               className="input-field w-full text-center font-mono tracking-wider"
               maxLength={6}
               style={{ textTransform: 'uppercase' }}
