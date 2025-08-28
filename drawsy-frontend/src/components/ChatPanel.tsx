@@ -12,8 +12,10 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [containerWidth, setContainerWidth] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { chatMessages, gameState, addTypingUser, removeTypingUser } = useGameStore();
@@ -79,6 +81,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
       }
     };
   }, [isTyping, currentUser]);
+
+  // Track container width for responsive AI suggestions layout
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -196,8 +215,19 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
     return player ? player.name : `Player ${userId.slice(-4)}`;
   };
 
+  // Determine if suggestions should be laid out horizontally or vertically
+  // Horizontal layout needs at least 480px width to accommodate 2 suggestions properly
+  const shouldUseHorizontalLayout = () => {
+    return containerWidth >= 480;
+  };
+
+  // Determine if we should truncate text based on container width
+  const shouldTruncateText = () => {
+    return containerWidth < 320; // Very narrow containers need truncation
+  };
+
   return (
-    <div className={`h-full flex flex-col ${className}`}>
+    <div ref={containerRef} className={`h-full flex flex-col chat-panel ${className}`}>
 
 
       {/* Messages */}
@@ -319,27 +349,29 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
             </button>
           </div>
 
-          {/* AI Suggestions - Minimal */}
+          {/* AI Suggestions - Responsive */}
           <AnimatePresence>
             {aiSuggestions.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10"
+                className="mt-2 p-2 bg-white/5 rounded-lg border border-white/10 overflow-hidden"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-white/60 font-medium flex items-center gap-1">
+                <div className="flex items-start gap-2 min-w-0">
+                  <span className="text-xs text-white/60 font-medium flex items-center gap-1 flex-shrink-0">
                     <span className="text-xs">🤖</span>
                     AI:
                   </span>
-                  <div className="flex gap-2 flex-1">
+                  <div className={`${shouldUseHorizontalLayout() ? 'flex gap-2 flex-wrap' : 'flex flex-col gap-1'} flex-1 min-w-0`}>
                     {aiSuggestions.slice(0, 2).map((suggestion, index) => {
                       const moodStyles = [
                         { emoji: '💚', bg: 'bg-emerald-500/20 hover:bg-emerald-500/30', border: 'border-emerald-500/30' },
                         { emoji: '🤔', bg: 'bg-blue-500/20 hover:bg-blue-500/30', border: 'border-blue-500/30' }
                       ];
                       const mood = moodStyles[index] || moodStyles[0];
+                      const isHorizontal = shouldUseHorizontalLayout();
+                      const needsTruncation = shouldTruncateText();
 
                       return (
                         <motion.button
@@ -348,11 +380,21 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ className = '' }) => {
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ delay: index * 0.05 }}
                           onClick={() => handleSuggestionClick(suggestion)}
-                          className={`flex-1 flex items-center gap-1 px-2 py-1 ${mood.bg} rounded border ${mood.border} text-white/90 text-xs hover:text-white transition-all duration-150 hover:scale-[1.02]`}
-                          title="Click to use this suggestion"
+                          className={`${
+                            isHorizontal ? 'flex-shrink-0' : 'w-full'
+                          } inline-flex items-center gap-1 px-2 py-1 ${mood.bg} rounded border ${mood.border} text-white/90 text-xs hover:text-white transition-all duration-150 hover:scale-[1.01] min-w-0 ${
+                            isHorizontal ? 'max-w-fit' : 'max-w-full'
+                          }`}
+                          title={`Click to use: ${suggestion}`}
                         >
-                          <span className="text-xs">{mood.emoji}</span>
-                          <span className="truncate">{suggestion}</span>
+                          <span className="text-xs flex-shrink-0">{mood.emoji}</span>
+                          <span className={`${
+                            needsTruncation || !isHorizontal 
+                              ? 'truncate min-w-0' 
+                              : 'whitespace-nowrap'
+                          }`}>
+                            {suggestion}
+                          </span>
                         </motion.button>
                       );
                     })}

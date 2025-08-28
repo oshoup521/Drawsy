@@ -424,6 +424,93 @@
   background: rgba(255, 255, 255, 0.5);
 }
 
+/* Chat container overflow protection */
+.chat-panel {
+  min-width: 0; /* Allow flex shrinking */
+  overflow: hidden; /* Prevent content overflow */
+}
+
+.chat-panel .chat-bottom-area {
+  min-width: 0; /* Ensure bottom area respects container width */
+}
+
+.chat-panel .chat-input-container {
+  min-width: 0; /* Prevent input container from overflowing */
+}
+
+/* AI Suggestions responsive behavior */
+.ai-suggestions-horizontal {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.ai-suggestions-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ai-suggestion-button {
+  min-width: 0;
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* Ensure suggestions don't take up more space than needed */
+.ai-suggestion-button.horizontal {
+  flex-shrink: 0;
+  width: auto;
+}
+
+.ai-suggestion-button.vertical {
+  width: fit-content;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+/* Game area chat specific styling (narrow containers) */
+.w-80 .chat-panel .ai-suggestion-button,
+.w-64 .chat-panel .ai-suggestion-button {
+  max-width: calc(100% - 1rem);
+  overflow: hidden;
+}
+
+.w-80 .chat-panel .ai-suggestion-button span:last-child,
+.w-64 .chat-panel .ai-suggestion-button span:last-child {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ensure suggestions text wraps properly in narrow containers */
+@media (max-width: 480px) {
+  .chat-panel .ai-suggestions-horizontal {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .ai-suggestion-button {
+    width: fit-content;
+    max-width: 100%;
+  }
+}
+
+/* Specific breakpoint for game area (around 320px width) */
+@media (max-width: 400px) {
+  .ai-suggestion-button {
+    max-width: 100% !important;
+  }
+  
+  .ai-suggestion-button span:last-child {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
 /* Guess Area Styling */
 .guess-area {
   margin-bottom: 16px;
