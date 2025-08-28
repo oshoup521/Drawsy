@@ -403,14 +403,6 @@ const GameRoom: React.FC = () => {
     // Round ended event
     const handleRoundEnded = (data: any) => {
       setTimerActive(false);
-      
-      // Show the correct word and scores briefly
-      addChatMessage({
-        userId: 'system',
-        message: `⏰ Time's up! The word was "${data.correctWord}"`,
-        isAI: true,
-        timestamp: Date.now(),
-      });
 
       // Update scores if provided
       if (data.scores) {
@@ -445,13 +437,7 @@ const GameRoom: React.FC = () => {
         status: 'finished'
       } : null);
 
-      // Show winner announcement
-      addChatMessage({
-        userId: 'system',
-        message: `🎉 Game Over! ${data.winner.name} wins with ${data.winner.score} points!`,
-        isAI: true,
-        timestamp: Date.now(),
-      });
+      // Winner announcement removed - using podium popup instead
 
       // Play winner celebration sound
       playWinnerCelebrationSound();
@@ -526,13 +512,6 @@ const GameRoom: React.FC = () => {
     // Send end round request to server
     if (roomId && gameState?.status === 'playing') {
       socketService.endRound();
-      
-      addChatMessage({
-        userId: 'system',
-        message: '⏰ Time\'s up! Round ending...',
-        isAI: true,
-        timestamp: Date.now(),
-      });
     }
   };
 
