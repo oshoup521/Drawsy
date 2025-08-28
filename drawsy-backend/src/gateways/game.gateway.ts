@@ -501,6 +501,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
             return;
           }
           
+          // Clear canvas for everyone at the start of a new round
+          try {
+            await this.gameService.clearDrawingData(clientInfo.roomId);
+            this.server.to(clientInfo.roomId).emit('clear_canvas');
+            console.log(`[END_ROUND] Canvas cleared for new round ${nextDrawerResult.roundNumber}`);
+          } catch (error) {
+            console.error(`[END_ROUND] Failed to clear canvas for new round:`, error);
+            // Still broadcast clear canvas event even if database clear fails
+            this.server.to(clientInfo.roomId).emit('clear_canvas');
+          }
+
           // Notify about next round starting
           this.server.to(clientInfo.roomId).emit('next_round_started', {
             currentRound: nextDrawerResult.roundNumber,
